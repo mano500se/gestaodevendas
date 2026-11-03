@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#059669">
+    <title>Cadernito - Vendas, Dívidas e Cobranças</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Custom scrollbar for horizontal badges & tables */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Glassmorphism effects */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen pb-24 md:pb-10">
+
+    <!-- TOP HEADER -->
+    <header class="bg-gradient-to-r from-blue-600 to-teal-700 text-white sticky top-0 z-30 shadow-md">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
+                    <i data-lucide="book-open-check" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold leading-tight">Caderninho MultiShopPresentes</h1>
+                    <p class="text-xs text-emerald-100">Gestão de Vendas e Cobranças</p>
+                </div>
+            </div>
+
+            <!-- Quick Action Buttons Header -->
+            <div class="flex items-center gap-2">
+                <button onclick="openClientModal()" class="hidden sm:flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-semibold px-3 py-2 rounded-lg transition shadow-sm">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i> Novo Cliente
+                </button>
+                <button onclick="openTransactionModal()" class="flex items-center gap-1.5 bg-white text-emerald-700 hover:bg-emerald-50 text-xs font-bold px-3.5 py-2 rounded-lg transition shadow">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Nova Venda
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-6xl mx-auto px-4 py-6 space-y-6">
+
+        <!-- FINANCIAL SUMMARY METRICS -->
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            <!-- Total a Receber -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-slate-500 mb-1">
+                    <span class="text-xs font-medium uppercase tracking-wider">A Receber</span>
+                    <div class="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+                        <i data-lucide="wallet" class="w-4 h-4"></i>
+                    </div>
+                </div>
+                <div>
+                    <div id="stat-total-pending" class="text-xl md:text-2xl font-bold text-slate-800">R$ 0,00</div>
+                    <span id="stat-count-pending" class="text-xs text-slate-400">0 pendentes</span>
+                </div>
+            </div>
+
+            <!-- Em Atraso -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-red-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-slate-500 mb-1">
+                    <span class="text-xs font-medium uppercase tracking-wider text-red-600 font-semibold">Em Atraso</span>
+                    <div class="p-1.5 rounded-lg bg-red-50 text-red-600">
+                        <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                    </div>
+                </div>
+                <div>
+                    <div id="stat-total-overdue" class="text-xl md:text-2xl font-bold text-red-600">R$ 0,00</div>
+                    <span id="stat-count-overdue" class="text-xs text-red-400">0 vencidas</span>
+                </div>
+            </div>
+
+            <!-- Vencendo Logo -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-amber-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-slate-500 mb-1">
+                    <span class="text-xs font-medium uppercase tracking-wider text-amber-600 font-semibold">Vencendo (3d)</span>
+                    <div class="p-1.5 rounded-lg bg-amber-50 text-amber-600">
+                        <i data-lucide="clock" class="w-4 h-4"></i>
+                    </div>
+                </div>
+                <div>
+                    <div id="stat-total-due-soon" class="text-xl md:text-2xl font-bold text-amber-600">R$ 0,00</div>
+                    <span id="stat-count-due-soon" class="text-xs text-amber-500">0 compras</span>
+                </div>
+            </div>
+
+            <!-- Total Recebido -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-slate-500 mb-1">
+                    <span class="text-xs font-medium uppercase tracking-wider">Total Pago</span>
+                    <div class="p-1.5 rounded-lg bg-blue-50 text-blue-600">
+                        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                    </div>
+                </div>
+                <div>
+                    <div id="stat-total-paid" class="text-xl md:text-2xl font-bold text-slate-800">R$ 0,00</div>
+                    <span id="stat-count-paid" class="text-xs text-slate-400">0 liquidadas</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- NAVIGATION TABS -->
+        <div class="flex border-b border-slate-200 overflow-x-auto no-scrollbar">
+            <button id="tab-btn-transactions" onclick="switchTab('transactions')" class="py-2.5 px-4 font-semibold text-sm border-b-2 border-emerald-600 text-emerald-600 flex items-center gap-2 shrink-0">
+                <i data-lucide="receipt" class="w-4 h-4"></i> Movimentações
+            </button>
+            <button id="tab-btn-clients" onclick="switchTab('clients')" class="py-2.5 px-4 font-semibold text-sm text-slate-500 hover:text-slate-700 border-b-2 border-transparent flex items-center gap-2 shrink-0">
+                <i data-lucide="users" class="w-4 h-4"></i> Clientes
+            </button>
+            <button id="tab-btn-history" onclick="switchTab('history')" class="py-2.5 px-4 font-semibold text-sm text-slate-500 hover:text-slate-700 border-b-2 border-transparent flex items-center gap-2 shrink-0">
+                <i data-lucide="history" class="w-4 h-4"></i> Compras por Cliente
+            </button>
+            <button id="tab-btn-settings" onclick="switchTab('settings')" class="py-2.5 px-4 font-semibold text-sm text-slate-500 hover:text-slate-700 border-b-2 border-transparent flex items-center gap-2 shrink-0">
+                <i data-lucide="settings" class="w-4 h-4"></i> Ajustes / Mensagens
+            </button>
+        </div>
+
+        <!-- VIEW 1: TRANSACTIONS / MOVIMENTAÇÕES -->
+        <div id="view-transactions" class="space-y-4">
+
+            <!-- SEARCH AND FILTER BAR -->
+            <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+                <div class="flex flex-col md:flex-row gap-3">
+                    <!-- Search input -->
+                    <div class="relative flex-1">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                        <input type="text" id="search-input" oninput="renderTransactions()" placeholder="Buscar por cliente ou produto..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition">
+                    </div>
+
+                    <!-- Client Select Filter -->
+                    <select id="filter-client" onchange="renderTransactions()" class="bg-slate-50 border border-slate-200 rounded-xl text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                        <option value="ALL">Todos os Clientes</option>
+                    </select>
+                </div>
+
+                <!-- Status Filter Badges -->
+                <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-medium">
+                    <button onclick="setFilterStatus('ALL')" id="filter-status-ALL" class="filter-status-btn px-3 py-1.5 rounded-xl bg-slate-800 text-white shrink-0 transition">
+                        Todos
+                    </button>
+                    <button onclick="setFilterStatus('OVERDUE')" id="filter-status-OVERDUE" class="filter-status-btn px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-red-600 shrink-0 transition flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-red-500"></span> Em Atraso
+                    </button>
+                    <button onclick="setFilterStatus('DUE_SOON')" id="filter-status-DUE_SOON" class="filter-status-btn px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-amber-50 hover:text-amber-600 shrink-0 transition flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span> Vencendo
+                    </button>
+                    <button onclick="setFilterStatus('ON_TIME')" id="filter-status-ON_TIME" class="filter-status-btn px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 shrink-0 transition flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Em Dia
+                    </button>
+                    <button onclick="setFilterStatus('PAID')" id="filter-status-PAID" class="filter-status-btn px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600 shrink-0 transition flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span> Pagos
+                    </button>
+                </div>
+            </div>
+
+            <!-- TRANSACTIONS LIST CONTAINER -->
+            <div id="transactions-container" class="space-y-3">
+                <!-- Rendered dynamically via JS -->
+            </div>
+        </div>
+
+        <!-- VIEW 2: CLIENTS / CLIENTES -->
+        <div id="view-clients" class="space-y-4 hidden">
+            <div class="flex items-center justify-between bg-white p-3.5 rounded-2xl shadow-sm border border-slate-100">
+                <div class="relative flex-1 mr-3">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                    <input type="text" id="search-client-input" oninput="renderClients()" placeholder="Buscar cliente..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                </div>
+                <button onclick="openClientModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shrink-0 shadow-sm transition">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i> Novo Cliente
+                </button>
+            </div>
+
+            <!-- CLIENTS LIST -->
+            <div id="clients-container" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <!-- Rendered dynamically -->
+            </div>
+        </div>
+
+        <!-- VIEW 3: CLIENT HISTORY / HISTÓRICO DE COMPRAS POR CLIENTE -->
+        <div id="view-history" class="space-y-4 hidden">
+            <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row gap-3 items-center justify-between">
+                <div class="relative flex-1 w-full">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                    <input type="text" id="search-history-input" oninput="renderClientHistory()" placeholder="Buscar cliente no histórico..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                </div>
+                <div class="text-xs text-slate-500 font-medium shrink-0">
+                    Histórico consolidado agrupado por cliente
+                </div>
+            </div>
+
+            <!-- CONTAINER FOR CLIENT HISTORIES -->
+            <div id="history-container" class="space-y-4">
+                <!-- Rendered dynamically via JS -->
+            </div>
+        </div>
+
+        <!-- VIEW 4: SETTINGS / AJUSTES & BACKUP -->
+        <div id="view-settings" class="space-y-6 hidden">
+            <!-- Custom Templates Form -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="message-square" class="w-5 h-5 text-emerald-600"></i>
+                    Modelos de Lembrete via WhatsApp
+                </h2>
+                <p class="text-xs text-slate-500">
+                    Você pode usar as variáveis: <code class="bg-slate-100 text-emerald-700 px-1 py-0.5 rounded font-mono">{cliente}</code>, <code class="bg-slate-100 text-emerald-700 px-1 py-0.5 rounded font-mono">{descricao}</code>, <code class="bg-slate-100 text-emerald-700 px-1 py-0.5 rounded font-mono">{valor}</code>, <code class="bg-slate-100 text-emerald-700 px-1 py-0.5 rounded font-mono">{vencimento}</code>, <code class="bg-slate-100 text-emerald-700 px-1 py-0.5 rounded font-mono">{dias}</code>.
+                </p>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Para cobranças "Em Atraso"</label>
+                        <textarea id="tpl-overdue" rows="3" class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Para cobranças "Vencendo Em Breve"</label>
+                        <textarea id="tpl-due-soon" rows="3" class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Para cobranças "Em Dia / Geral"</label>
+                        <textarea id="tpl-on-time" rows="3" class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button onclick="saveTemplates()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition">
+                        Salvar Modelos
+                    </button>
+                </div>
+            </div>
+
+            <!-- Backup & Data Management -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="database" class="w-5 h-5 text-emerald-600"></i>
+                    Dados & Cópia de Segurança (Backup)
+                </h2>
+                <p class="text-xs text-slate-500">
+                    Seus dados estão armazenados localmente neste dispositivo. Faça backup regularmente para evitar perdas.
+                </p>
+
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="exportData()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 transition">
+                        <i data-lucide="download" class="w-4 h-4"></i> Baixar Backup (.json)
+                    </button>
+                    
+                    <label class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition">
+                        <i data-lucide="upload" class="w-4 h-4"></i> Restaurar Backup
+                        <input type="file" id="import-file" accept=".json" onchange="importData(event)" class="hidden">
+                    </label>
+
+                    <button onclick="confirmResetData()" class="bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 transition ml-auto">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i> Limpar Tudo
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MOBILE FLOATING ACTION BUTTON (FAB) -->
+    <div class="fixed bottom-5 right-5 sm:hidden z-20">
+        <button onclick="openTransactionModal()" class="w-14 h-14 bg-gradient-to-tr from-emerald-600 to-teal-500 text-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition">
+            <i data-lucide="plus" class="w-7 h-7"></i>
+        </button>
+    </div>
+
+    <!-- MODAL: TRANSACTION FORM (NOVA / EDITAR VENDA) -->
+    <div id="modal-transaction" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-lg w-full shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="bg-slate-50 px-5 py-4 border-b border-slate-100 flex justify-between items-center">
+                <h3 id="modal-transaction-title" class="font-bold text-slate-800 text-base flex items-center gap-2">
+                    <i data-lucide="shopping-bag" class="w-5 h-5 text-emerald-600"></i> Nova Venda / Dívida
+                </h3>
+                <button onclick="closeTransactionModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="form-transaction" onsubmit="handleTransactionSubmit(event)" class="p-5 space-y-4">
+                <input type="hidden" id="tx-id">
+
+                <!-- Client Select -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-semibold text-slate-700">Cliente *</label>
+                        <button type="button" onclick="openClientModal()" class="text-xs text-emerald-600 hover:underline font-medium">+ Cadastrar Cliente</button>
+                    </div>
+                    <select id="tx-client-id" required class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none">
+                        <option value="">Selecione um cliente...</option>
+                    </select>
+                </div>
+
+                <!-- Multiple Products / Services Section -->
+                <div class="space-y-2 border border-slate-200/80 bg-slate-50/70 p-3.5 rounded-xl">
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Produtos / Serviços *</label>
+                        <button type="button" onclick="addTxItemRow()" class="text-xs text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-1 bg-emerald-100/80 hover:bg-emerald-200/90 px-2.5 py-1 rounded-lg transition shadow-sm">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Adicionar Item
+                        </button>
+                    </div>
+
+                    <!-- Dynamic List of Items -->
+                    <div id="tx-items-container" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                        <!-- Dynamic item rows inserted via JS -->
+                    </div>
+
+                    <!-- Total Geral Display -->
+                    <div class="flex items-center justify-between pt-2.5 border-t border-slate-200 text-xs font-semibold">
+                        <span class="text-slate-600">Total Geral da Venda:</span>
+                        <span id="tx-total-display" class="text-base font-extrabold text-emerald-700">R$ 0,00</span>
+                        <input type="hidden" id="tx-amount" value="0">
+                    </div>
+                </div>
+
+                <!-- Dates Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Data da Compra *</label>
+                        <input type="date" id="tx-purchase-date" required class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Data de Vencimento *</label>
+                        <input type="date" id="tx-due-date" required class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none font-semibold text-emerald-700">
+                    </div>
+                </div>
+
+                <!-- Initial Payment Status -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Status do Pagamento</label>
+                    <select id="tx-status" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none">
+                        <option value="PENDING">Pendente (A receber)</option>
+                        <option value="PAID">Pago (Liquidado)</option>
+                    </select>
+                </div>
+
+                <!-- Additional Notes -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Observações (opcional)</label>
+                    <input type="text" id="tx-notes" placeholder="Ex: Combinou de pagar no Pix" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none">
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" onclick="closeTransactionModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition">Salvar Lançamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: CLIENT FORM (NOVO / EDITAR CLIENTE) -->
+    <div id="modal-client" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="bg-slate-50 px-5 py-4 border-b border-slate-100 flex justify-between items-center">
+                <h3 id="modal-client-title" class="font-bold text-slate-800 text-base flex items-center gap-2">
+                    <i data-lucide="user-plus" class="w-5 h-5 text-emerald-600"></i> Cadastrar Cliente
+                </h3>
+                <button onclick="closeClientModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="form-client" onsubmit="handleClientSubmit(event)" class="p-5 space-y-4">
+                <input type="hidden" id="client-id">
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nome Completo *</label>
+                    <input type="text" id="client-name" required placeholder="Ex: Maria das Dores" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Telefone WhatsApp (com DDD) *</label>
+                    <input type="tel" id="client-phone" required placeholder="Ex: (11) 99999-8888 ou 5511999998888" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none font-mono">
+                    <p class="text-[11px] text-slate-400 mt-1">Usado para abrir o chat diretamente no WhatsApp.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Anotações do Cliente (opcional)</label>
+                    <input type="text" id="client-notes" placeholder="Ex: Mora perto da praça central" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none">
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" onclick="closeClientModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition">Salvar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: WHATSAPP REMINDER PREVIEW & TRIGGER -->
+    <div id="modal-whatsapp" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="bg-emerald-600 text-white px-5 py-4 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="message-circle" class="w-5 h-5"></i>
+                    <h3 class="font-bold text-base">Enviar Lembrete WhatsApp</h3>
+                </div>
+                <button onclick="closeWhatsAppModal()" class="text-emerald-100 hover:text-white p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4">
+                <!-- Info Header -->
+                <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-center justify-between text-xs">
+                    <div>
+                        <p class="font-bold text-emerald-900" id="wa-modal-client-name">-</p>
+                        <p class="text-emerald-700 font-mono" id="wa-modal-client-phone">-</p>
+                    </div>
+                    <span id="wa-modal-status-badge" class="px-2 py-1 rounded-md text-[10px] font-bold"></span>
+                </div>
+
+                <!-- Message Editor -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Edite a mensagem antes de enviar:</label>
+                    <textarea id="wa-modal-message" rows="5" class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none font-sans leading-relaxed"></textarea>
+                </div>
+
+                <!-- Quick Tips -->
+                <p class="text-[11px] text-slate-400 flex items-center gap-1">
+                    <i data-lucide="info" class="w-3.5 h-3.5 text-slate-400"></i>
+                    Ao clicar abaixo, o app do WhatsApp será aberto com a mensagem pronta.
+                </p>
+
+                <!-- Action Button -->
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button onclick="closeWhatsAppModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+                    <button onclick="launchWhatsApp()" class="px-5 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md flex items-center gap-2 transition">
+                        <i data-lucide="send" class="w-4 h-4"></i> Abrir WhatsApp
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CONFIRMATION DIALOG -->
+    <div id="modal-confirm" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full shadow-xl p-5 space-y-4 text-center">
+            <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h3 id="confirm-title" class="font-bold text-slate-800 text-base">Confirmar Ação</h3>
+                <p id="confirm-desc" class="text-xs text-slate-500 mt-1">Tem certeza de que deseja realizar esta operação?</p>
+            </div>
+            <div class="flex justify-center gap-2 pt-2">
+                <button onclick="closeConfirmModal(false)" class="w-1/2 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition">Não, cancelar</button>
+                <button id="confirm-yes-btn" onclick="closeConfirmModal(true)" class="w-1/2 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm transition">Sim, confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 pointer-events-none space-y-2"></div>
+
+    <!-- APPLICATION LOGIC IN JAVASCRIPT -->
+    <script>
+        // --- INITIAL STATE & STORAGE KEYS ---
+        const STORAGE_KEY_CLIENTS = 'cadernito_clients_v1';
+        const STORAGE_KEY_TRANSACTIONS = 'cadernito_transactions_v1';
+        const STORAGE_KEY_TEMPLATES = 'cadernito_templates_v1';
+
+        let clients = [];
+        let transactions = [];
+        let templates = {
+            overdue: "Olá {cliente}! Tudo bem? Gostaria de avisar sobre a sua compra ({descricao}) no valor de {valor}, que venceu no dia {vencimento}. Quando puder, me avisa para acertarmos. Muito obrigado(a)!",
+            dueSoon: "Olá {cliente}, tudo bem? Passando para lembrar que a sua compra ({descricao}) no valor de {valor} vence {vencimento} ({dias}). Qualquer dúvida, fico à disposição!",
+            onTime: "Olá {cliente}! Segue o lembrete da sua compra ({descricao}) no valor de {valor}, com vencimento agendado para {vencimento}. Agradecemos a preferência!"
+        };
+
+        let currentFilterStatus = 'ALL';
+        let activeWhatsAppPayload = null;
+        let confirmResolver = null;
+
+        // --- INITIALIZATION ---
+        window.addEventListener('DOMContentLoaded', () => {
+            loadLocalStorageData();
+            lucide.createIcons();
+            
+            // Set default transaction dates in form
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('tx-purchase-date').value = todayStr;
+            document.getElementById('tx-due-date').value = todayStr;
+
+            renderAll();
+        });
+
+        // --- DATA MANAGEMENT & PERSISTENCE ---
+        function saveClients() {
+            localStorage.setItem(STORAGE_KEY_CLIENTS, JSON.stringify(clients));
+        }
+
+        function saveTransactions() {
+            localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(transactions));
+        }
+
+        function saveTemplatesToStorage() {
+            localStorage.setItem(STORAGE_KEY_TEMPLATES, JSON.stringify(templates));
+        }
+
+        function loadLocalStorageData() {
+            const rawClients = localStorage.getItem(STORAGE_KEY_CLIENTS);
+            const rawTransactions = localStorage.getItem(STORAGE_KEY_TRANSACTIONS);
+            const rawTemplates = localStorage.getItem(STORAGE_KEY_TEMPLATES);
+
+            if (rawClients) {
+                clients = JSON.parse(rawClients);
+            } else {
+                // Initial mock data if empty
+                clients = [
+                    { id: 'c1', name: 'Ana Souza', phone: '5511988887777', notes: 'Cliente frequente' },
+                    { id: 'c2', name: 'Carlos Eduardo', phone: '5521977776666', notes: 'Paga no dia 10' },
+                    { id: 'c3', name: 'Juliana Lima', phone: '5531999995555', notes: '' }
+                ];
+                saveClients();
+            }
+
+            if (rawTransactions) {
+                transactions = JSON.parse(rawTransactions);
+            } else {
+                // Mock transactions for testing categorization
+                const today = new Date();
+
+                const d1 = new Date(today); d1.setDate(today.getDate() - 5); // Overdue 5 days ago
+                const d2 = new Date(today); d2.setDate(today.getDate() + 2); // Due in 2 days
+                const d3 = new Date(today); d3.setDate(today.getDate() + 10); // Due in 10 days
+
+                transactions = [
+                    { 
+                        id: 't1', 
+                        clientId: 'c1', 
+                        description: 'Vestido Florido (1x), Acessórios (2x)', 
+                        amount: 180.00, 
+                        items: [
+                            { description: 'Vestido Florido', qty: 1, unitPrice: 120.00, subtotal: 120.00 },
+                            { description: 'Acessórios', qty: 2, unitPrice: 30.00, subtotal: 60.00 }
+                        ],
+                        purchaseDate: d1.toISOString().split('T')[0], 
+                        dueDate: d1.toISOString().split('T')[0], 
+                        status: 'PENDING', 
+                        notes: '' 
+                    },
+                    { 
+                        id: 't2', 
+                        clientId: 'c2', 
+                        description: 'Kit Cosméticos Natura (1x)', 
+                        amount: 125.50, 
+                        items: [
+                            { description: 'Kit Cosméticos Natura', qty: 1, unitPrice: 125.50, subtotal: 125.50 }
+                        ],
+                        purchaseDate: today.toISOString().split('T')[0], 
+                        dueDate: d2.toISOString().split('T')[0], 
+                        status: 'PENDING', 
+                        notes: 'Prometeu Pix' 
+                    },
+                    { 
+                        id: 't3', 
+                        clientId: 'c3', 
+                        description: 'Sapato Couro Preto (1x)', 
+                        amount: 210.00, 
+                        items: [
+                            { description: 'Sapato Couro Preto', qty: 1, unitPrice: 210.00, subtotal: 210.00 }
+                        ],
+                        purchaseDate: today.toISOString().split('T')[0], 
+                        dueDate: d3.toISOString().split('T')[0], 
+                        status: 'PENDING', 
+                        notes: '' 
+                    }
+                ];
+                saveTransactions();
+            }
+
+            if (rawTemplates) {
+                templates = { ...templates, ...JSON.parse(rawTemplates) };
+            }
+            populateTemplatesUI();
+        }
+
+        // --- HELPER FOR MULTI-ITEM TRANSACTIONS ---
+        function getTxItems(tx) {
+            if (tx.items && Array.isArray(tx.items) && tx.items.length > 0) {
+                return tx.items;
+            }
+            return [{
+                description: tx.description || 'Produto/Serviço',
+                qty: 1,
+                unitPrice: parseFloat(tx.amount) || 0,
+                subtotal: parseFloat(tx.amount) || 0
+            }];
+        }
+
+        function addTxItemRow(description = '', qty = 1, unitPrice = '') {
+            const container = document.getElementById('tx-items-container');
+            const rowId = 'item_' + Math.random().toString(36).substr(2, 9);
+
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'tx-item-row bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm space-y-2';
+            rowDiv.id = rowId;
+
+            rowDiv.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <input type="text" placeholder="Nome do produto ou serviço..." value="${escapeHtml(description)}" required class="item-desc w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                    <button type="button" onclick="removeTxItemRow('${rowId}')" class="text-slate-400 hover:text-red-500 p-1 rounded-lg transition" title="Remover item">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Qtd</label>
+                        <input type="number" min="1" step="1" value="${qty}" oninput="calculateTxTotals()" required class="item-qty w-full p-1.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-semibold focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Valor Unit. (R$)</label>
+                        <input type="number" step="0.01" min="0" placeholder="0,00" value="${unitPrice}" oninput="calculateTxTotals()" required class="item-price w-full p-1.5 bg-slate-50 border border-slate-200 rounded-lg font-semibold focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Subtotal</label>
+                        <div class="item-subtotal p-1.5 bg-slate-100 rounded-lg text-slate-700 font-extrabold text-right truncate">R$ 0,00</div>
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(rowDiv);
+            lucide.createIcons();
+            calculateTxTotals();
+        }
+
+        function removeTxItemRow(rowId) {
+            const container = document.getElementById('tx-items-container');
+            const row = document.getElementById(rowId);
+            if (row && container.children.length > 1) {
+                row.remove();
+                calculateTxTotals();
+            } else {
+                showToast('A venda deve conter pelo menos 1 item.', 'warning');
+            }
+        }
+
+        function calculateTxTotals() {
+            const rows = document.querySelectorAll('.tx-item-row');
+            let grandTotal = 0;
+
+            rows.forEach(row => {
+                const qtyInput = row.querySelector('.item-qty');
+                const priceInput = row.querySelector('.item-price');
+                const subtotalDiv = row.querySelector('.item-subtotal');
+
+                const qty = Math.max(1, parseInt(qtyInput.value) || 1);
+                const unitPrice = Math.max(0, parseFloat(priceInput.value) || 0);
+                const subtotal = qty * unitPrice;
+
+                subtotalDiv.innerText = formatCurrency(subtotal);
+                grandTotal += subtotal;
+            });
+
+            document.getElementById('tx-total-display').innerText = formatCurrency(grandTotal);
+            document.getElementById('tx-amount').value = grandTotal.toFixed(2);
+        }
+
+        // --- STATUS & DATE COMPUTATION LOGIC ---
+        function getTransactionStatusDetails(tx) {
+            if (tx.status === 'PAID') {
+                return {
+                    code: 'PAID',
+                    label: 'Pago',
+                    badgeClass: 'bg-blue-100 text-blue-800 border-blue-200',
+                    dotClass: 'bg-blue-500',
+                    daysText: 'Liquidado'
+                };
+            }
+
+            // Calculate diff days
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const [year, month, day] = tx.dueDate.split('-').map(Number);
+            const dueDateObj = new Date(year, month - 1, day);
+            dueDateObj.setHours(0, 0, 0, 0);
+
+            const diffTime = dueDateObj - today;
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 0) {
+                const daysAbs = Math.abs(diffDays);
+                return {
+                    code: 'OVERDUE',
+                    label: 'Em Atraso',
+                    badgeClass: 'bg-red-100 text-red-800 border-red-200',
+                    dotClass: 'bg-red-500',
+                    diffDays: diffDays,
+                    daysText: `Atrasado há ${daysAbs} dia(s)`
+                };
+            } else if (diffDays <= 3) {
+                return {
+                    code: 'DUE_SOON',
+                    label: 'Vencendo',
+                    badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
+                    dotClass: 'bg-amber-500',
+                    diffDays: diffDays,
+                    daysText: diffDays === 0 ? 'Vence HOJE' : `Vence em ${diffDays} dia(s)`
+                };
+            } else {
+                return {
+                    code: 'ON_TIME',
+                    label: 'Em Dia',
+                    badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                    dotClass: 'bg-emerald-500',
+                    diffDays: diffDays,
+                    daysText: `Vence em ${diffDays} dias`
+                };
+            }
+        }
+
+        // --- RENDERING VIEWS ---
+        function renderAll() {
+            renderMetrics();
+            renderClientSelectDropdowns();
+            renderTransactions();
+            renderClients();
+            renderClientHistory();
+        }
+
+        function renderMetrics() {
+            let totalPending = 0;
+            let countPending = 0;
+
+            let totalOverdue = 0;
+            let countOverdue = 0;
+
+            let totalDueSoon = 0;
+            let countDueSoon = 0;
+
+            let totalPaid = 0;
+            let countPaid = 0;
+
+            transactions.forEach(tx => {
+                const amount = parseFloat(tx.amount) || 0;
+                const statusDetails = getTransactionStatusDetails(tx);
+
+                if (tx.status === 'PAID') {
+                    totalPaid += amount;
+                    countPaid++;
+                } else {
+                    totalPending += amount;
+                    countPending++;
+
+                    if (statusDetails.code === 'OVERDUE') {
+                        totalOverdue += amount;
+                        countOverdue++;
+                    } else if (statusDetails.code === 'DUE_SOON') {
+                        totalDueSoon += amount;
+                        countDueSoon++;
+                    }
+                }
+            });
+
+            document.getElementById('stat-total-pending').innerText = formatCurrency(totalPending);
+            document.getElementById('stat-count-pending').innerText = `${countPending} lançamentos`;
+
+            document.getElementById('stat-total-overdue').innerText = formatCurrency(totalOverdue);
+            document.getElementById('stat-count-overdue').innerText = `${countOverdue} em atraso`;
+
+            document.getElementById('stat-total-due-soon').innerText = formatCurrency(totalDueSoon);
+            document.getElementById('stat-count-due-soon').innerText = `${countDueSoon} vencendo logo`;
+
+            document.getElementById('stat-total-paid').innerText = formatCurrency(totalPaid);
+            document.getElementById('stat-count-paid').innerText = `${countPaid} liquidados`;
+        }
+
+        function renderTransactions() {
+            const container = document.getElementById('transactions-container');
+            const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
+            const filterClientId = document.getElementById('filter-client').value;
+
+            const filtered = transactions.filter(tx => {
+                const client = clients.find(c => c.id === tx.clientId);
+                const clientName = client ? client.name.toLowerCase() : '';
+                const description = tx.description.toLowerCase();
+
+                const matchesSearch = clientName.includes(searchVal) || description.includes(searchVal);
+                const matchesClientFilter = filterClientId === 'ALL' || tx.clientId === filterClientId;
+
+                const statusDetails = getTransactionStatusDetails(tx);
+                let matchesStatus = true;
+
+                if (currentFilterStatus !== 'ALL') {
+                    matchesStatus = (statusDetails.code === currentFilterStatus);
+                }
+
+                return matchesSearch && matchesClientFilter && matchesStatus;
+            });
+
+            // Sort by due date (oldest due date first for pending, paid at bottom)
+            filtered.sort((a, b) => {
+                if (a.status === 'PAID' && b.status !== 'PAID') return 1;
+                if (a.status !== 'PAID' && b.status === 'PAID') return -1;
+                return new Date(a.dueDate) - new Date(b.dueDate);
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center border border-slate-100 space-y-2">
+                        <i data-lucide="inbox" class="w-10 h-10 text-slate-300 mx-auto"></i>
+                        <p class="text-sm font-semibold text-slate-600">Nenhuma movimentação encontrada</p>
+                        <p class="text-xs text-slate-400">Tente ajustar os filtros de busca ou clique em "+ Nova Venda".</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = filtered.map(tx => {
+                const client = clients.find(c => c.id === tx.clientId) || { name: 'Cliente Removido', phone: '' };
+                const statusDetails = getTransactionStatusDetails(tx);
+                const isPaid = tx.status === 'PAID';
+                const items = getTxItems(tx);
+
+                return `
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 hover:border-slate-200 transition space-y-3">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="space-y-0.5">
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-bold text-slate-800 text-sm">${escapeHtml(client.name)}</h4>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border flex items-center gap-1 ${statusDetails.badgeClass}">
+                                        <span class="w-1.5 h-1.5 rounded-full ${statusDetails.dotClass}"></span>
+                                        ${statusDetails.label}
+                                    </span>
+                                </div>
+                                <p class="text-xs text-slate-500 font-medium">${items.length} item(ns) cadastrado(s)</p>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <div class="text-base font-extrabold ${isPaid ? 'text-slate-400 line-through' : 'text-slate-800'}">
+                                    ${formatCurrency(tx.amount)}
+                                </div>
+                                <span class="text-[11px] text-slate-400">${statusDetails.daysText}</span>
+                            </div>
+                        </div>
+
+                        <!-- Item Breakdown List -->
+                        <div class="bg-slate-50/80 rounded-xl p-2.5 border border-slate-100 text-xs space-y-1">
+                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Detalhamento dos Itens:</span>
+                            <ul class="space-y-1">
+                                ${items.map(item => `
+                                    <li class="flex justify-between items-center text-slate-700">
+                                        <span><strong class="text-slate-900">${item.qty}x</strong> ${escapeHtml(item.description)}</span>
+                                        <span class="font-mono text-slate-500 text-[11px]">${formatCurrency(item.subtotal)}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+
+                        <!-- Transaction Dates & Notes -->
+                        <div class="flex flex-wrap items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-50 gap-2">
+                            <div class="flex items-center gap-3">
+                                <span>Compra: <strong>${formatDate(tx.purchaseDate)}</strong></span>
+                                <span>Vencimento: <strong class="${statusDetails.code === 'OVERDUE' ? 'text-red-600 font-bold' : ''}">${formatDate(tx.dueDate)}</strong></span>
+                            </div>
+                            ${tx.notes ? `<span class="italic text-slate-400 bg-slate-50 px-2 py-0.5 rounded">obs: ${escapeHtml(tx.notes)}</span>` : ''}
+                        </div>
+
+                        <!-- Action Bar -->
+                        <div class="flex items-center justify-between pt-1 gap-2">
+                            <div class="flex items-center gap-1">
+                                <button onclick="toggleTransactionStatus('${tx.id}')" title="Alternar Pago / Pendente" class="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 ${isPaid ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'} transition">
+                                    <i data-lucide="${isPaid ? 'rotate-ccw' : 'check'}" class="w-3.5 h-3.5"></i>
+                                    ${isPaid ? 'Marcar Pendente' : 'Marcar como Pago'}
+                                </button>
+                            </div>
+
+                            <div class="flex items-center gap-1">
+                                ${!isPaid ? `
+                                    <button onclick="openWhatsAppModal('${tx.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm transition">
+                                        <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> Lembrete WhatsApp
+                                    </button>
+                                ` : ''}
+
+                                <button onclick="openTransactionModal('${tx.id}')" class="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition" title="Editar">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="confirmDeleteTransaction('${tx.id}')" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Excluir">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function renderClients() {
+            const container = document.getElementById('clients-container');
+            const searchVal = document.getElementById('search-client-input').value.toLowerCase().trim();
+
+            const filtered = clients.filter(c => 
+                c.name.toLowerCase().includes(searchVal) || 
+                c.phone.includes(searchVal)
+            );
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full bg-white rounded-2xl p-8 text-center border border-slate-100">
+                        <p class="text-sm font-semibold text-slate-600">Nenhum cliente encontrado</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(c => {
+                // Calculate debt summary for this client
+                const clientTxs = transactions.filter(t => t.clientId === c.id);
+                const pendingTxs = clientTxs.filter(t => t.status === 'PENDING');
+                const totalDebt = pendingTxs.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+                const overdueCount = pendingTxs.filter(t => getTransactionStatusDetails(t).code === 'OVERDUE').length;
+
+                return `
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col justify-between space-y-3">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">${escapeHtml(c.name)}</h4>
+                                <p class="text-xs font-mono text-emerald-700 flex items-center gap-1 mt-0.5">
+                                    <i data-lucide="phone" class="w-3 h-3"></i> ${formatPhoneNumber(c.phone)}
+                                </p>
+                                ${c.notes ? `<p class="text-xs text-slate-400 mt-1">${escapeHtml(c.notes)}</p>` : ''}
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs text-slate-400 block">Dívida Ativa</span>
+                                <span class="text-sm font-extrabold ${totalDebt > 0 ? 'text-slate-800' : 'text-emerald-600'}">
+                                    ${formatCurrency(totalDebt)}
+                                </span>
+                                ${overdueCount > 0 ? `<span class="block text-[10px] text-red-600 font-semibold">${overdueCount} em atraso</span>` : ''}
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-50">
+                            <button onclick="openTransactionModalForClient('${c.id}')" class="text-xs text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-1">
+                                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Nova Venda
+                            </button>
+                            <div class="flex items-center gap-1">
+                                <button onclick="openClientModal('${c.id}')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="confirmDeleteClient('${c.id}')" class="p-1.5 text-slate-400 hover:text-red-600 rounded-lg">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function renderClientSelectDropdowns() {
+            const selectTx = document.getElementById('tx-client-id');
+            const selectFilter = document.getElementById('filter-client');
+
+            const currentTxVal = selectTx.value;
+            const currentFilterVal = selectFilter.value;
+
+            let txOptions = '<option value="">Selecione um cliente...</option>';
+            let filterOptions = '<option value="ALL">Todos os Clientes</option>';
+
+            clients.sort((a,b) => a.name.localeCompare(b.name)).forEach(c => {
+                txOptions += `<option value="${c.id}">${escapeHtml(c.name)} (${formatPhoneNumber(c.phone)})</option>`;
+                filterOptions += `<option value="${c.id}">${escapeHtml(c.name)}</option>`;
+            });
+
+            selectTx.innerHTML = txOptions;
+            selectFilter.innerHTML = filterOptions;
+
+            selectTx.value = currentTxVal;
+            selectFilter.value = currentFilterVal;
+        }
+
+        // --- FILTER TAB CONTROLS ---
+        function setFilterStatus(status) {
+            currentFilterStatus = status;
+            document.querySelectorAll('.filter-status-btn').forEach(btn => {
+                btn.className = 'filter-status-btn px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0 transition flex items-center gap-1.5';
+            });
+
+            const activeBtn = document.getElementById(`filter-status-${status}`);
+            if (activeBtn) {
+                activeBtn.className = 'filter-status-btn px-3 py-1.5 rounded-xl bg-slate-800 text-white shrink-0 transition flex items-center gap-1.5 shadow-sm';
+            }
+            renderTransactions();
+        }
+
+        function switchTab(tabName) {
+            document.getElementById('view-transactions').classList.add('hidden');
+            document.getElementById('view-clients').classList.add('hidden');
+            document.getElementById('view-history').classList.add('hidden');
+            document.getElementById('view-settings').classList.add('hidden');
+
+            const inactiveClass = "py-2.5 px-4 font-semibold text-sm text-slate-500 hover:text-slate-700 border-b-2 border-transparent flex items-center gap-2 shrink-0";
+            const activeClass = "py-2.5 px-4 font-semibold text-sm border-b-2 border-emerald-600 text-emerald-600 flex items-center gap-2 shrink-0";
+
+            document.getElementById('tab-btn-transactions').className = inactiveClass;
+            document.getElementById('tab-btn-clients').className = inactiveClass;
+            document.getElementById('tab-btn-history').className = inactiveClass;
+            document.getElementById('tab-btn-settings').className = inactiveClass;
+
+            if (tabName === 'transactions') {
+                document.getElementById('view-transactions').classList.remove('hidden');
+                document.getElementById('tab-btn-transactions').className = activeClass;
+            } else if (tabName === 'clients') {
+                document.getElementById('view-clients').classList.remove('hidden');
+                document.getElementById('tab-btn-clients').className = activeClass;
+            } else if (tabName === 'history') {
+                document.getElementById('view-history').classList.remove('hidden');
+                document.getElementById('tab-btn-history').className = activeClass;
+                renderClientHistory();
+            } else if (tabName === 'settings') {
+                document.getElementById('view-settings').classList.remove('hidden');
+                document.getElementById('tab-btn-settings').className = activeClass;
+            }
+        }
+
+        function renderClientHistory() {
+            const container = document.getElementById('history-container');
+            if (!container) return;
+
+            const searchVal = (document.getElementById('search-history-input')?.value || '').toLowerCase().trim();
+
+            const filteredClients = clients.filter(c => 
+                c.name.toLowerCase().includes(searchVal) || 
+                c.phone.includes(searchVal)
+            );
+
+            if (filteredClients.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center border border-slate-100">
+                        <i data-lucide="history" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
+                        <p class="text-sm font-semibold text-slate-600">Nenhum histórico encontrado</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = filteredClients.map(client => {
+                const clientTxs = transactions.filter(t => t.clientId === client.id);
+                clientTxs.sort((a, b) => new Date(b.purchaseDate) - new Date(a.purchaseDate));
+
+                const totalPurchasesCount = clientTxs.length;
+                const totalAmount = clientTxs.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+                const pendingTxs = clientTxs.filter(t => t.status === 'PENDING');
+                const totalPendingAmount = pendingTxs.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+                const paidTxs = clientTxs.filter(t => t.status === 'PAID');
+                const totalPaidAmount = paidTxs.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+
+                return `
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                        <!-- Client Header Summary -->
+                        <div class="bg-slate-50 p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-bold text-slate-800 text-base">${escapeHtml(client.name)}</h3>
+                                    <span class="text-xs bg-slate-200 text-slate-700 font-semibold px-2 py-0.5 rounded-full">
+                                        ${totalPurchasesCount} compra(s)
+                                    </span>
+                                </div>
+                                <p class="text-xs font-mono text-emerald-700 flex items-center gap-1 mt-0.5">
+                                    <i data-lucide="phone" class="w-3 h-3"></i> ${formatPhoneNumber(client.phone)}
+                                </p>
+                            </div>
+
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <div class="bg-white px-3 py-1.5 rounded-xl border border-slate-200">
+                                    <span class="text-slate-400 block text-[10px]">Total Comprado</span>
+                                    <span class="font-bold text-slate-800">${formatCurrency(totalAmount)}</span>
+                                </div>
+                                <div class="bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100">
+                                    <span class="text-blue-500 block text-[10px]">Total Pago</span>
+                                    <span class="font-bold text-blue-700">${formatCurrency(totalPaidAmount)}</span>
+                                </div>
+                                <div class="bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">
+                                    <span class="text-emerald-600 block text-[10px]">Pendente</span>
+                                    <span class="font-bold ${totalPendingAmount > 0 ? 'text-amber-600' : 'text-emerald-700'}">${formatCurrency(totalPendingAmount)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Client Transactions List -->
+                        <div class="p-4 space-y-3">
+                            ${clientTxs.length === 0 ? `
+                                <p class="text-xs text-slate-400 text-center py-2">Nenhuma compra registrada para este cliente.</p>
+                            ` : clientTxs.map(tx => {
+                                const statusDetails = getTransactionStatusDetails(tx);
+                                const isPaid = tx.status === 'PAID';
+                                const items = getTxItems(tx);
+
+                                return `
+                                    <div class="border border-slate-100 rounded-xl p-3 bg-slate-50/50 hover:bg-slate-50 transition space-y-2">
+                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                            <div class="flex items-center gap-2">
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border flex items-center gap-1 ${statusDetails.badgeClass}">
+                                                    <span class="w-1.5 h-1.5 rounded-full ${statusDetails.dotClass}"></span>
+                                                    ${statusDetails.label}
+                                                </span>
+                                                <span class="text-xs text-slate-500">
+                                                    Compra em: <strong>${formatDate(tx.purchaseDate)}</strong> | Vencimento: <strong>${formatDate(tx.dueDate)}</strong>
+                                                </span>
+                                            </div>
+                                            <div class="font-bold text-sm text-slate-800">
+                                                ${formatCurrency(tx.amount)}
+                                            </div>
+                                        </div>
+
+                                        <!-- Item breakdown -->
+                                        <div class="text-xs text-slate-600 bg-white p-2 rounded-lg border border-slate-100">
+                                            <div class="font-semibold text-slate-700 mb-1 text-[11px]">Itens comprados:</div>
+                                            <ul class="space-y-0.5">
+                                                ${items.map(it => `
+                                                    <li class="flex justify-between text-[11px]">
+                                                        <span><strong class="text-slate-800">${it.qty}x</strong> ${escapeHtml(it.description)}</span>
+                                                        <span class="font-mono text-slate-500">${formatCurrency(it.subtotal)}</span>
+                                                    </li>
+                                                `).join('')}
+                                            </ul>
+                                        </div>
+
+                                        <div class="flex items-center justify-between text-xs pt-1">
+                                            <span class="text-[11px] text-slate-400 font-medium">${statusDetails.daysText}</span>
+                                            <div class="flex items-center gap-1">
+                                                <button onclick="toggleTransactionStatus('${tx.id}')" title="Alternar Pago / Pendente" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1 ${isPaid ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'} transition">
+                                                    <i data-lucide="${isPaid ? 'rotate-ccw' : 'check'}" class="w-3 h-3"></i>
+                                                    ${isPaid ? 'Tornar Pendente' : 'Marcar Pago'}
+                                                </button>
+                                                ${!isPaid ? `
+                                                    <button onclick="openWhatsAppModal('${tx.id}')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-semibold flex items-center gap-1 transition">
+                                                        <i data-lucide="message-circle" class="w-3 h-3"></i> WhatsApp
+                                                    </button>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        // --- TRANSACTION HANDLERS ---
+        function openTransactionModal(editId = null) {
+            if (clients.length === 0) {
+                showToast('Cadastre pelo menos um cliente antes de criar uma venda.', 'warning');
+                openClientModal();
+                return;
+            }
+
+            const form = document.getElementById('form-transaction');
+            form.reset();
+            document.getElementById('tx-items-container').innerHTML = '';
+
+            const title = document.getElementById('modal-transaction-title');
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            if (editId) {
+                const tx = transactions.find(t => t.id === editId);
+                if (tx) {
+                    document.getElementById('tx-id').value = tx.id;
+                    document.getElementById('tx-client-id').value = tx.clientId;
+                    document.getElementById('tx-purchase-date').value = tx.purchaseDate;
+                    document.getElementById('tx-due-date').value = tx.dueDate;
+                    document.getElementById('tx-status').value = tx.status;
+                    document.getElementById('tx-notes').value = tx.notes || '';
+                    
+                    const items = getTxItems(tx);
+                    items.forEach(item => addTxItemRow(item.description, item.qty, item.unitPrice));
+                    
+                    title.innerHTML = `<i data-lucide="edit" class="w-5 h-5 text-emerald-600"></i> Editar Venda`;
+                }
+            } else {
+                document.getElementById('tx-id').value = '';
+                document.getElementById('tx-purchase-date').value = todayStr;
+                document.getElementById('tx-due-date').value = todayStr;
+                document.getElementById('tx-status').value = 'PENDING';
+                
+                // Add initial empty item row
+                addTxItemRow();
+                title.innerHTML = `<i data-lucide="shopping-bag" class="w-5 h-5 text-emerald-600"></i> Nova Venda / Dívida`;
+            }
+
+            calculateTxTotals();
+            lucide.createIcons();
+            document.getElementById('modal-transaction').classList.remove('hidden');
+        }
+
+        function openTransactionModalForClient(clientId) {
+            openTransactionModal();
+            document.getElementById('tx-client-id').value = clientId;
+        }
+
+        function closeTransactionModal() {
+            document.getElementById('modal-transaction').classList.add('hidden');
+        }
+
+        function handleTransactionSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('tx-id').value;
+            const clientId = document.getElementById('tx-client-id').value;
+            const purchaseDate = document.getElementById('tx-purchase-date').value;
+            const dueDate = document.getElementById('tx-due-date').value;
+            const status = document.getElementById('tx-status').value;
+            const notes = document.getElementById('tx-notes').value.trim();
+
+            // Collect items
+            const rowElements = document.querySelectorAll('.tx-item-row');
+            const items = [];
+            let totalAmount = 0;
+
+            rowElements.forEach(row => {
+                const desc = row.querySelector('.item-desc').value.trim();
+                const qty = parseInt(row.querySelector('.item-qty').value) || 1;
+                const unitPrice = parseFloat(row.querySelector('.item-price').value) || 0;
+                const subtotal = qty * unitPrice;
+
+                if (desc && subtotal > 0) {
+                    items.push({ description: desc, qty, unitPrice, subtotal });
+                    totalAmount += subtotal;
+                }
+            });
+
+            if (!clientId || items.length === 0 || totalAmount <= 0) {
+                showToast('Preencha os dados do cliente e adicione pelo menos um item válido.', 'error');
+                return;
+            }
+
+            // Build item summary text
+            const descriptionSummary = items.map(i => `${i.description} (${i.qty}x)`).join(', ');
+
+            if (id) {
+                // Update
+                const index = transactions.findIndex(t => t.id === id);
+                if (index !== -1) {
+                    transactions[index] = { 
+                        ...transactions[index], 
+                        clientId, 
+                        description: descriptionSummary, 
+                        amount: totalAmount, 
+                        items, 
+                        purchaseDate, 
+                        dueDate, 
+                        status, 
+                        notes 
+                    };
+                    showToast('Movimentação atualizada com sucesso!');
+                }
+            } else {
+                // Create
+                const newTx = {
+                    id: 't_' + Date.now(),
+                    clientId,
+                    description: descriptionSummary,
+                    amount: totalAmount,
+                    items,
+                    purchaseDate,
+                    dueDate,
+                    status,
+                    notes
+                };
+                transactions.unshift(newTx);
+                showToast('Nova venda cadastrada com sucesso!');
+            }
+
+            saveTransactions();
+            closeTransactionModal();
+            renderAll();
+        }
+
+        function toggleTransactionStatus(id) {
+            const index = transactions.findIndex(t => t.id === id);
+            if (index !== -1) {
+                const currentStatus = transactions[index].status;
+                const newStatus = currentStatus === 'PAID' ? 'PENDING' : 'PAID';
+                transactions[index].status = newStatus;
+                saveTransactions();
+                renderAll();
+
+                showToast(newStatus === 'PAID' ? 'Status alterado para PAGO!' : 'Status retornado para PENDENTE.');
+            }
+        }
+
+        async function confirmDeleteTransaction(id) {
+            const confirmed = await showConfirmModal('Excluir Lançamento', 'Deseja realmente apagar este registro de venda?');
+            if (confirmed) {
+                transactions = transactions.filter(t => t.id !== id);
+                saveTransactions();
+                renderAll();
+                showToast('Lançamento excluído com sucesso.');
+            }
+        }
+
+        // --- CLIENT HANDLERS ---
+        function openClientModal(editId = null) {
+            const form = document.getElementById('form-client');
+            form.reset();
+            const title = document.getElementById('modal-client-title');
+
+            if (editId) {
+                const client = clients.find(c => c.id === editId);
+                if (client) {
+                    document.getElementById('client-id').value = client.id;
+                    document.getElementById('client-name').value = client.name;
+                    document.getElementById('client-phone').value = client.phone;
+                    document.getElementById('client-notes').value = client.notes || '';
+                    title.innerHTML = `<i data-lucide="edit" class="w-5 h-5 text-emerald-600"></i> Editar Cliente`;
+                }
+            } else {
+                document.getElementById('client-id').value = '';
+                title.innerHTML = `<i data-lucide="user-plus" class="w-5 h-5 text-emerald-600"></i> Cadastrar Cliente`;
+            }
+
+            lucide.createIcons();
+            document.getElementById('modal-client').classList.remove('hidden');
+        }
+
+        function closeClientModal() {
+            document.getElementById('modal-client').classList.add('hidden');
+        }
+
+        function handleClientSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('client-id').value;
+            const name = document.getElementById('client-name').value.trim();
+            const rawPhone = document.getElementById('client-phone').value.trim();
+            const notes = document.getElementById('client-notes').value.trim();
+
+            const cleanPhone = sanitizePhone(rawPhone);
+
+            if (!name || cleanPhone.length < 10) {
+                showToast('Informe um nome válido e telefone com DDD (mínimo 10 dígitos).', 'error');
+                return;
+            }
+
+            if (id) {
+                const idx = clients.findIndex(c => c.id === id);
+                if (idx !== -1) {
+                    clients[idx] = { ...clients[idx], name, phone: cleanPhone, notes };
+                    showToast('Dados do cliente atualizados!');
+                }
+            } else {
+                const newClient = {
+                    id: 'c_' + Date.now(),
+                    name,
+                    phone: cleanPhone,
+                    notes
+                };
+                clients.push(newClient);
+                showToast('Cliente cadastrado com sucesso!');
+            }
+
+            saveClients();
+            closeClientModal();
+            renderAll();
+        }
+
+        async function confirmDeleteClient(id) {
+            const clientTxs = transactions.filter(t => t.clientId === id);
+            if (clientTxs.length > 0) {
+                showToast(`Não é possível excluir cliente que possui ${clientTxs.length} lançamento(s) associado(s).`, 'warning');
+                return;
+            }
+
+            const confirmed = await showConfirmModal('Excluir Cliente', 'Deseja apagar este cliente do seu cadastro?');
+            if (confirmed) {
+                clients = clients.filter(c => c.id !== id);
+                saveClients();
+                renderAll();
+                showToast('Cliente removido.');
+            }
+        }
+
+        // --- WHATSAPP REMINDER DISPATCH LOGIC ---
+        function openWhatsAppModal(txId) {
+            const tx = transactions.find(t => t.id === txId);
+            if (!tx) return;
+
+            const client = clients.find(c => c.id === tx.clientId);
+            if (!client || !client.phone) {
+                showToast('Cliente não encontrado ou sem telefone cadastrado.', 'error');
+                return;
+            }
+
+            const statusDetails = getTransactionStatusDetails(tx);
+            const items = getTxItems(tx);
+
+            // Format items list for WhatsApp
+            let itemsFormatted = '';
+            if (items.length === 1) {
+                itemsFormatted = `${items[0].description} (${items[0].qty}x)`;
+            } else {
+                itemsFormatted = '\n' + items.map(item => `  • ${item.qty}x ${item.description} - ${formatCurrency(item.subtotal)}`).join('\n');
+            }
+            
+            // Choose appropriate template
+            let templateStr = templates.onTime;
+            if (statusDetails.code === 'OVERDUE') {
+                templateStr = templates.overdue;
+            } else if (statusDetails.code === 'DUE_SOON') {
+                templateStr = templates.dueSoon;
+            }
+
+            // Fill placeholders
+            const daysAbs = Math.abs(statusDetails.diffDays || 0);
+            const formattedMsg = templateStr
+                .replace(/{cliente}/g, client.name)
+                .replace(/{descricao}/g, itemsFormatted)
+                .replace(/{valor}/g, formatCurrency(tx.amount))
+                .replace(/{vencimento}/g, formatDate(tx.dueDate))
+                .replace(/{dias}/g, daysAbs === 0 ? 'hoje' : `${daysAbs} dias`);
+
+            // Store active dispatch context
+            activeWhatsAppPayload = {
+                phone: client.phone,
+                message: formattedMsg
+            };
+
+            // Set UI elements
+            document.getElementById('wa-modal-client-name').innerText = client.name;
+            document.getElementById('wa-modal-client-phone').innerText = formatPhoneNumber(client.phone);
+            document.getElementById('wa-modal-message').value = formattedMsg;
+
+            const badge = document.getElementById('wa-modal-status-badge');
+            badge.className = `px-2 py-1 rounded-md text-[10px] font-bold ${statusDetails.badgeClass}`;
+            badge.innerText = statusDetails.label;
+
+            document.getElementById('modal-whatsapp').classList.remove('hidden');
+        }
+
+        function closeWhatsAppModal() {
+            document.getElementById('modal-whatsapp').classList.add('hidden');
+            activeWhatsAppPayload = null;
+        }
+
+        function launchWhatsApp() {
+            if (!activeWhatsAppPayload) return;
+
+            const editedMsg = document.getElementById('wa-modal-message').value.trim();
+            const phone = activeWhatsAppPayload.phone;
+
+            const encodedText = encodeURIComponent(editedMsg);
+            const whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodedText}`;
+
+            window.open(whatsappUrl, '_blank');
+            closeWhatsAppModal();
+            showToast('Direcionando para o WhatsApp...');
+        }
+
+        // --- TEMPLATES MANAGEMENT ---
+        function populateTemplatesUI() {
+            document.getElementById('tpl-overdue').value = templates.overdue;
+            document.getElementById('tpl-due-soon').value = templates.dueSoon;
+            document.getElementById('tpl-on-time').value = templates.onTime;
+        }
+
+        function saveTemplates() {
+            templates.overdue = document.getElementById('tpl-overdue').value;
+            templates.dueSoon = document.getElementById('tpl-due-soon').value;
+            templates.onTime = document.getElementById('tpl-on-time').value;
+
+            saveTemplatesToStorage();
+            showToast('Modelos de mensagens salvos com sucesso!');
+        }
+
+        // --- BACKUP & RESTORE ---
+        function exportData() {
+            const data = {
+                clients,
+                transactions,
+                templates,
+                exportedAt: new Date().toISOString()
+            };
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cadernito_backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Backup gerado e baixado com sucesso!');
+        }
+
+        function importData(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const parsed = JSON.parse(event.target.result);
+                    if (parsed.clients && parsed.transactions) {
+                        clients = parsed.clients;
+                        transactions = parsed.transactions;
+                        if (parsed.templates) templates = { ...templates, ...parsed.templates };
+
+                        saveClients();
+                        saveTransactions();
+                        saveTemplatesToStorage();
+                        populateTemplatesUI();
+                        renderAll();
+
+                        showToast('Dados restaurados com sucesso!');
+                    } else {
+                        showToast('Arquivo de backup inválido.', 'error');
+                    }
+                } catch (err) {
+                    showToast('Erro ao ler arquivo de backup.', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        async function confirmResetData() {
+            const confirmed = await showConfirmModal('Zerar Todos os Dados', 'Atenção: Isso excluirá TODOS os clientes e cobranças salvos. Deseja continuar?');
+            if (confirmed) {
+                clients = [];
+                transactions = [];
+                saveClients();
+                saveTransactions();
+                renderAll();
+                showToast('Todos os dados foram apurados.');
+            }
+        }
+
+        // --- UTILITY & HELPER FUNCTIONS ---
+        function formatCurrency(val) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const [year, month, day] = dateStr.split('-');
+            return `${day}/${month}/${year}`;
+        }
+
+        function sanitizePhone(phoneStr) {
+            let cleaned = phoneStr.replace(/\D/g, '');
+            // Automatically add country code 55 if standard 10 or 11 digits without 55
+            if (cleaned.length === 10 || cleaned.length === 11) {
+                cleaned = '55' + cleaned;
+            }
+            return cleaned;
+        }
+
+        function formatPhoneNumber(phone) {
+            if (!phone) return '';
+            // Basic formatting for presentation (e.g. +55 (11) 99999-8888)
+            let p = phone;
+            if (p.startsWith('55') && p.length >= 12) {
+                const ddd = p.substring(2, 4);
+                const number = p.substring(4);
+                if (number.length === 9) {
+                    return `+55 (${ddd}) ${number.substring(0, 5)}-${number.substring(5)}`;
+                } else if (number.length === 8) {
+                    return `+55 (${ddd}) ${number.substring(0, 4)}-${number.substring(4)}`;
+                }
+            }
+            return '+' + p;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[m];
+            });
+        }
+
+        // Custom Confirm Dialog Promise Wrapper
+        function showConfirmModal(title, desc) {
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-desc').innerText = desc;
+            document.getElementById('modal-confirm').classList.remove('hidden');
+
+            return new Promise((resolve) => {
+                confirmResolver = resolve;
+            });
+        }
+
+        function closeConfirmModal(result) {
+            document.getElementById('modal-confirm').classList.add('hidden');
+            if (confirmResolver) {
+                confirmResolver(result);
+                confirmResolver = null;
+            }
+        }
+
+        // Toast Feedback System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgClass = 'bg-slate-900 text-white';
+            let iconName = 'check-circle-2';
+
+            if (type === 'error') {
+                bgClass = 'bg-red-600 text-white';
+                iconName = 'alert-circle';
+            } else if (type === 'warning') {
+                bgClass = 'bg-amber-600 text-white';
+                iconName = 'alert-triangle';
+            }
+
+            toast.className = `${bgClass} px-4 py-3 rounded-xl shadow-lg text-xs font-semibold flex items-center gap-2 pointer-events-auto animate-in fade-in slide-in-from-top duration-300`;
+            toast.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4 shrink-0"></i> <span>${escapeHtml(message)}</span>`;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'transition', 'duration-300');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
