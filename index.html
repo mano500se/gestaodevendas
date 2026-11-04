@@ -4,13 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#059669">
-    <title>Cadernito - Vendas, Dívidas e Cobranças</title>
+    <title>Caderninho - Vendas, Dívidas e Cobranças</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Font Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700" rel="stylesheet">
+    <!-- Google Identity Services for Google Drive API -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -30,6 +32,14 @@
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
         }
+
+        /* Remove as margens padrão do navegador */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
     </style>
 </head>
 <body class="text-slate-800 antialiased min-h-screen pb-24 md:pb-10">
@@ -38,12 +48,15 @@
     <header class="bg-gradient-to-r from-blue-600 to-teal-700 text-white sticky top-0 z-30 shadow-md">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
             <div class="flex items-center space-x-3">
-                <div class="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
+                <div class="bg-white/20 p-4 rounded-xl backdrop-blur-sm">
                     <i data-lucide="book-open-check" class="w-6 h-6 text-white"></i>
                 </div>
                 <div>
                     <h1 class="text-lg font-bold leading-tight">Caderninho MultiShopPresentes</h1>
                     <p class="text-xs text-emerald-100">Gestão de Vendas e Cobranças</p>
+                    <p class="text-xs text-emerald-100">By mano500 - 2026</p>
+                    <p class="text-xs text-emerald-100">Contato: <a href="mano500.se@gmail.com">mano500.se@gmail.com</a></p>
+                    
                 </div>
             </div>
 
@@ -263,19 +276,48 @@
                     Seus dados estão armazenados localmente neste dispositivo. Faça backup regularmente para evitar perdas.
                 </p>
 
+                <!-- Android Web Share / Direct Export & Drive -->
                 <div class="flex flex-wrap gap-3">
                     <button onclick="exportData()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 transition">
                         <i data-lucide="download" class="w-4 h-4"></i> Baixar Backup (.json)
                     </button>
+
+                    <button onclick="shareToDrive()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 transition shadow-sm">
+                        <i data-lucide="share-2" class="w-4 h-4"></i> Enviar / Salvar no Google Drive
+                    </button>
                     
                     <label class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition">
-                        <i data-lucide="upload" class="w-4 h-4"></i> Restaurar Backup
+                        <i data-lucide="upload" class="w-4 h-4"></i> Restaurar Arquivo JSON
                         <input type="file" id="import-file" accept=".json" onchange="importData(event)" class="hidden">
                     </label>
 
                     <button onclick="confirmResetData()" class="bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 transition ml-auto">
                         <i data-lucide="trash-2" class="w-4 h-4"></i> Limpar Tudo
                     </button>
+                </div>
+
+                <!-- Google Drive API Integration -->
+                <div class="pt-4 border-t border-slate-100 space-y-3">
+                    <h3 class="text-xs font-bold text-slate-700 flex items-center gap-1.5 uppercase tracking-wider">
+                        <i data-lucide="cloud" class="w-4 h-4 text-emerald-600"></i> Sincronização Direta via API Google Drive
+                    </h3>
+                    <p class="text-[11px] text-slate-500">
+                        Insira seu <b>Client ID do Google Cloud</b> (opcional) para sincronizar o backup em 1 clique na sua nuvem.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input type="text" id="gdrive-client-id" placeholder="Cole seu Client ID do Google OAuth aqui..." class="flex-1 text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 font-mono">
+                        <button onclick="saveGoogleClientId()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-semibold px-3.5 py-2.5 rounded-xl transition shrink-0">
+                            Salvar Key
+                        </button>
+                    </div>
+                    <div class="flex flex-wrap gap-2 pt-1">
+                        <button onclick="backupToGoogleDrive()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition">
+                            <i data-lucide="cloud-upload" class="w-4 h-4"></i> Salvar no Drive via API
+                        </button>
+                        <button onclick="restoreFromGoogleDrive()" class="bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-semibold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition">
+                            <i data-lucide="cloud-download" class="w-4 h-4"></i> Restaurar do Drive via API
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -350,12 +392,19 @@
                 </div>
 
                 <!-- Initial Payment Status -->
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Status do Pagamento</label>
-                    <select id="tx-status" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none">
-                        <option value="PENDING">Pendente (A receber)</option>
-                        <option value="PAID">Pago (Liquidado)</option>
-                    </select>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Status do Pagamento</label>
+                        <select id="tx-status" onchange="togglePaidAmountInput()" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none">
+                            <option value="PENDING">Pendente (A receber)</option>
+                            <option value="PARTIAL">Parcialmente Pago</option>
+                            <option value="PAID">Totalmente Pago (Liquidado)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Valor Já Pago / Entrada (R$)</label>
+                        <input type="number" step="0.01" min="0" id="tx-paid-amount" placeholder="0,00" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none font-semibold text-emerald-700">
+                    </div>
                 </div>
 
                 <!-- Additional Notes -->
@@ -389,25 +438,66 @@
                 <input type="hidden" id="client-id">
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nome Completo *</label>
-                    <input type="text" id="client-name" required placeholder="Ex: Maria das Dores" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nome do Cliente *</label>
+                    <input type="text" id="client-name" required placeholder="Ex: Maria Silva" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Telefone WhatsApp (com DDD) *</label>
-                    <input type="tel" id="client-phone" required placeholder="Ex: (11) 99999-8888 ou 5511999998888" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none font-mono">
-                    <p class="text-[11px] text-slate-400 mt-1">Usado para abrir o chat diretamente no WhatsApp.</p>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">WhatsApp / Telefone (com DDD) *</label>
+                    <input type="tel" id="client-phone" required placeholder="Ex: (11) 98888-7777" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none">
+                    <p class="text-[11px] text-slate-400 mt-1">Insira o DDD. Ex: 11999998888</p>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Anotações do Cliente (opcional)</label>
-                    <input type="text" id="client-notes" placeholder="Ex: Mora perto da praça central" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Observações (opcional)</label>
+                    <input type="text" id="client-notes" placeholder="Ex: Prefere pagar no início do mês" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none">
                 </div>
 
-                <!-- Action Buttons -->
                 <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
                     <button type="button" onclick="closeClientModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
                     <button type="submit" class="px-5 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition">Salvar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: PARTIAL PAYMENT / ABATIMENTO -->
+    <div id="modal-partial" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="bg-slate-50 px-5 py-4 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                    <i data-lucide="coins" class="w-5 h-5 text-emerald-600"></i> Registrar Abatimento
+                </h3>
+                <button onclick="closePartialPaymentModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="form-partial" onsubmit="handlePartialPaymentSubmit(event)" class="p-5 space-y-4">
+                <input type="hidden" id="partial-tx-id">
+
+                <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-xs space-y-1">
+                    <p class="font-bold text-slate-800" id="partial-info-client">-</p>
+                    <div class="flex justify-between text-slate-600 pt-1 border-t border-emerald-100/60">
+                        <span>Total da Venda: <strong id="partial-info-total" class="text-slate-800">R$ 0,00</strong></span>
+                        <span>Já Pago: <strong id="partial-info-paid" class="text-emerald-700">R$ 0,00</strong></span>
+                    </div>
+                    <div class="flex justify-between text-slate-700 font-bold">
+                        <span>Saldo Restante:</span>
+                        <span id="partial-info-remaining" class="text-amber-700">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Valor do Novo Pagamento / Abatimento (R$) *</label>
+                    <input type="number" step="0.01" min="0.01" id="partial-input-amount" required placeholder="Ex: 50,00" class="w-full text-base font-bold p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none text-emerald-700">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" onclick="closePartialPaymentModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition flex items-center gap-1.5">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i> Confirmar Abatimento
+                    </button>
                 </div>
             </form>
         </div>
@@ -489,9 +579,9 @@
         let clients = [];
         let transactions = [];
         let templates = {
-            overdue: "Olá {cliente}! Tudo bem? Gostaria de avisar sobre a sua compra ({descricao}) no valor de {valor}, que venceu no dia {vencimento}. Quando puder, me avisa para acertarmos. Muito obrigado(a)!",
-            dueSoon: "Olá {cliente}, tudo bem? Passando para lembrar que a sua compra ({descricao}) no valor de {valor} vence {vencimento} ({dias}). Qualquer dúvida, fico à disposição!",
-            onTime: "Olá {cliente}! Segue o lembrete da sua compra ({descricao}) no valor de {valor}, com vencimento agendado para {vencimento}. Agradecemos a preferência!"
+            overdue: "Olá {cliente}! Tudo bem? Gostaria de avisar sobre a sua compra ({descricao}) no valor total de {valor}. {detalhe_pagamento}Data de vencimento: {vencimento}. Quando puder, me avisa para acertarmos. Muito obrigado(a)!",
+            dueSoon: "Olá {cliente}, tudo bem? Passando para lembrar que a sua compra ({descricao}) no valor de {valor} vence {vencimento} ({dias}). {detalhe_pagamento}Qualquer dúvida, fico à disposição!",
+            onTime: "Olá {cliente}! Segue o lembrete da sua compra ({descricao}) no valor total de {valor}, com vencimento em {vencimento}. {detalhe_pagamento}Agradecemos a preferência!"
         };
 
         let currentFilterStatus = 'ALL';
@@ -510,6 +600,368 @@
 
             renderAll();
         });
+
+        // --- GLOBAL RENDER FUNCTION ---
+        function renderAll() {
+            renderMetrics();
+            renderTransactions();
+            renderClients();
+            renderClientHistory();
+            renderClientSelectOptions();
+        }
+
+        // --- NAVIGATION & TABS ---
+        function switchTab(tabName) {
+            const tabs = ['transactions', 'clients', 'history', 'settings'];
+            tabs.forEach(t => {
+                const view = document.getElementById(`view-${t}`);
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (t === tabName) {
+                    if (view) view.classList.remove('hidden');
+                    if (btn) {
+                        btn.classList.add('border-emerald-600', 'text-emerald-600');
+                        btn.classList.remove('border-transparent', 'text-slate-500');
+                    }
+                } else {
+                    if (view) view.classList.add('hidden');
+                    if (btn) {
+                        btn.classList.remove('border-emerald-600', 'text-emerald-600');
+                        btn.classList.add('border-transparent', 'text-slate-500');
+                    }
+                }
+            });
+        }
+
+        function setFilterStatus(status) {
+            currentFilterStatus = status;
+            const buttons = document.querySelectorAll('.filter-status-btn');
+            buttons.forEach(btn => {
+                if (btn.id === `filter-status-${status}`) {
+                    btn.classList.add('bg-slate-800', 'text-white');
+                    btn.classList.remove('bg-slate-100', 'text-slate-600');
+                } else {
+                    btn.classList.remove('bg-slate-800', 'text-white');
+                    btn.classList.add('bg-slate-100', 'text-slate-600');
+                }
+            });
+            renderTransactions();
+        }
+
+        function renderClientSelectOptions() {
+            const txSelect = document.getElementById('tx-client-id');
+            const filterSelect = document.getElementById('filter-client');
+            if (!txSelect || !filterSelect) return;
+
+            const currentTxClient = txSelect.value;
+            const currentFilterClient = filterSelect.value;
+
+            txSelect.innerHTML = '<option value="">Selecione um cliente...</option>' +
+                clients.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+
+            filterSelect.innerHTML = '<option value="ALL">Todos os Clientes</option>' +
+                clients.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+
+            txSelect.value = currentTxClient;
+            filterSelect.value = currentFilterClient;
+        }
+
+        // --- CLIENT MANAGEMENT ---
+        function renderClients() {
+            const container = document.getElementById('clients-container');
+            if (!container) return;
+
+            const searchVal = (document.getElementById('search-client-input')?.value || '').toLowerCase().trim();
+
+            const filtered = clients.filter(c => 
+                c.name.toLowerCase().includes(searchVal) || 
+                c.phone.includes(searchVal) || 
+                (c.notes && c.notes.toLowerCase().includes(searchVal))
+            );
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full bg-white rounded-2xl p-8 text-center border border-slate-100 space-y-2">
+                        <i data-lucide="users" class="w-10 h-10 text-slate-300 mx-auto"></i>
+                        <p class="text-sm font-semibold text-slate-600">Nenhum cliente encontrado</p>
+                        <p class="text-xs text-slate-400">Clique em "+ Novo Cliente" para cadastrar.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = filtered.map(c => {
+                const clientTxs = transactions.filter(t => t.clientId === c.id);
+                let totalSpent = 0;
+                let totalPending = 0;
+
+                clientTxs.forEach(t => {
+                    const st = getTransactionStatusDetails(t);
+                    totalSpent += st.total;
+                    totalPending += st.remaining;
+                });
+
+                return `
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col justify-between space-y-3">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                    ${escapeHtml(c.name)}
+                                </h4>
+                                <p class="text-xs text-slate-500 font-mono mt-0.5">${formatPhoneNumber(c.phone)}</p>
+                                ${c.notes ? `<p class="text-[11px] text-slate-400 italic mt-1">${escapeHtml(c.notes)}</p>` : ''}
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button onclick="openClientModal('${c.id}')" class="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition" title="Editar">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="confirmDeleteClient('${c.id}')" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Excluir">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 rounded-xl p-2.5 text-xs grid grid-cols-2 gap-2 border border-slate-100">
+                            <div>
+                                <span class="text-[10px] uppercase font-bold text-slate-400">Total Comprado</span>
+                                <div class="font-extrabold text-slate-700">${formatCurrency(totalSpent)}</div>
+                            </div>
+                            <div>
+                                <span class="text-[10px] uppercase font-bold text-slate-400">Pendente</span>
+                                <div class="font-extrabold ${totalPending > 0 ? 'text-red-600' : 'text-emerald-600'}">${formatCurrency(totalPending)}</div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end pt-1">
+                            <a href="https://api.whatsapp.com/send?phone=${c.phone}" target="_blank" class="text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition">
+                                <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> Abrir Conversa
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function openClientModal(editId = null) {
+            const form = document.getElementById('form-client');
+            form.reset();
+            const title = document.getElementById('modal-client-title');
+
+            if (editId) {
+                const client = clients.find(c => c.id === editId);
+                if (client) {
+                    document.getElementById('client-id').value = client.id;
+                    document.getElementById('client-name').value = client.name;
+                    document.getElementById('client-phone').value = client.phone;
+                    document.getElementById('client-notes').value = client.notes || '';
+                    title.innerHTML = `<i data-lucide="edit" class="w-5 h-5 text-emerald-600"></i> Editar Cliente`;
+                }
+            } else {
+                document.getElementById('client-id').value = '';
+                title.innerHTML = `<i data-lucide="user-plus" class="w-5 h-5 text-emerald-600"></i> Cadastrar Cliente`;
+            }
+
+            document.getElementById('modal-client').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeClientModal() {
+            document.getElementById('modal-client').classList.add('hidden');
+        }
+
+        function handleClientSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('client-id').value;
+            const name = document.getElementById('client-name').value.trim();
+            const phoneInput = document.getElementById('client-phone').value.trim();
+            const notes = document.getElementById('client-notes').value.trim();
+
+            const phone = sanitizePhone(phoneInput);
+
+            if (!name || !phone) {
+                showToast('Preencha nome e telefone válidos.', 'error');
+                return;
+            }
+
+            if (id) {
+                const index = clients.findIndex(c => c.id === id);
+                if (index !== -1) {
+                    clients[index] = { ...clients[index], name, phone, notes };
+                    showToast('Cliente atualizado com sucesso!');
+                }
+            } else {
+                const newClient = {
+                    id: 'c_' + Date.now(),
+                    name,
+                    phone,
+                    notes
+                };
+                clients.push(newClient);
+                showToast('Cliente cadastrado com sucesso!');
+            }
+
+            saveClients();
+            closeClientModal();
+            renderAll();
+        }
+
+        async function confirmDeleteClient(clientId) {
+            const hasTxs = transactions.some(t => t.clientId === clientId);
+            const desc = hasTxs 
+                ? 'Este cliente possui compras registradas. Excluir o cliente também apagará todas as compras associadas. Confirmar?' 
+                : 'Deseja realmente excluir este cliente?';
+
+            const confirmed = await showConfirmModal('Excluir Cliente', desc);
+            if (confirmed) {
+                clients = clients.filter(c => c.id !== clientId);
+                transactions = transactions.filter(t => t.clientId !== clientId);
+                saveClients();
+                saveTransactions();
+                renderAll();
+                showToast('Cliente e suas compras foram excluídos.');
+            }
+        }
+
+        // --- CLIENT HISTORY VIEW ---
+        function renderClientHistory() {
+            const container = document.getElementById('history-container');
+            if (!container) return;
+
+            const searchVal = (document.getElementById('search-history-input')?.value || '').toLowerCase().trim();
+
+            const filteredClients = clients.filter(c => {
+                const nameMatch = c.name.toLowerCase().includes(searchVal);
+                const hasMatchingTx = transactions.some(t => t.clientId === c.id && t.description.toLowerCase().includes(searchVal));
+                return nameMatch || hasMatchingTx;
+            });
+
+            if (filteredClients.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center border border-slate-100 space-y-2">
+                        <i data-lucide="history" class="w-10 h-10 text-slate-300 mx-auto"></i>
+                        <p class="text-sm font-semibold text-slate-600">Nenhum histórico encontrado</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = filteredClients.map(c => {
+                const clientTxs = transactions.filter(t => t.clientId === c.id);
+                if (clientTxs.length === 0) {
+                    return `
+                        <div class="bg-white rounded-2xl p-4 border border-slate-100">
+                            <h4 class="font-bold text-slate-800 text-sm">${escapeHtml(c.name)}</h4>
+                            <p class="text-xs text-slate-400 mt-1 italic">Nenhuma compra registrada até o momento.</p>
+                        </div>
+                    `;
+                }
+
+                let totalAmount = 0;
+                let totalPaid = 0;
+                let totalPending = 0;
+
+                clientTxs.forEach(t => {
+                    const st = getTransactionStatusDetails(t);
+                    totalAmount += st.total;
+                    totalPaid += st.paidAmount;
+                    totalPending += st.remaining;
+                });
+
+                return `
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-3 gap-2">
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                                    <i data-lucide="user" class="w-4 h-4 text-emerald-600"></i> ${escapeHtml(c.name)}
+                                </h4>
+                                <span class="text-xs text-slate-500 font-mono">${formatPhoneNumber(c.phone)}</span>
+                            </div>
+
+                            <div class="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 text-xs">
+                                <div><span class="text-slate-400 block text-[10px] uppercase font-bold">Total Comprado</span><strong>${formatCurrency(totalAmount)}</strong></div>
+                                <div class="border-l border-slate-200 pl-3"><span class="text-slate-400 block text-[10px] uppercase font-bold">Pago</span><strong class="text-emerald-700">${formatCurrency(totalPaid)}</strong></div>
+                                <div class="border-l border-slate-200 pl-3"><span class="text-slate-400 block text-[10px] uppercase font-bold">Pendente</span><strong class="${totalPending > 0 ? 'text-red-600' : 'text-emerald-600'}">${formatCurrency(totalPending)}</strong></div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            ${clientTxs.map(tx => {
+                                const st = getTransactionStatusDetails(tx);
+                                const items = getTxItems(tx);
+                                const isPaid = tx.status === 'PAID' || st.remaining === 0;
+
+                                return `
+                                    <div class="bg-slate-50/70 p-3 rounded-xl border border-slate-100 space-y-2">
+                                        <div class="flex justify-between items-center text-xs">
+                                            <div class="flex items-center gap-2">
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border ${st.badgeClass}">${st.label}</span>
+                                                <span class="text-slate-500 font-medium">Data: ${formatDate(tx.purchaseDate)} (Vence: ${formatDate(tx.dueDate)})</span>
+                                            </div>
+                                            <span class="font-bold text-slate-800">${formatCurrency(st.total)}</span>
+                                        </div>
+                                        <div class="text-xs text-slate-600 font-medium">
+                                            ${items.map(i => `${i.qty}x ${escapeHtml(i.description)} (${formatCurrency(i.subtotal)})`).join(', ')}
+                                        </div>
+                                        ${st.isPartial ? `<div class="text-[11px] text-purple-800 font-semibold">Pago: ${formatCurrency(st.paidAmount)} | Pendente: ${formatCurrency(st.remaining)}</div>` : ''}
+                                        <div class="flex justify-end gap-1.5 pt-1">
+                                            ${!isPaid ? `
+                                                <button onclick="openWhatsAppModal('${tx.id}')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-semibold flex items-center gap-1 transition">
+                                                    <i data-lucide="message-circle" class="w-3 h-3"></i> Cobrar
+                                                </button>
+                                            ` : ''}
+                                            <button onclick="toggleTransactionStatus('${tx.id}')" class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-[11px] font-semibold transition">
+                                                ${isPaid ? 'Marcar Pendente' : 'Quitar'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        // --- TRANSACTION TOGGLE & DELETE ACTIONS ---
+        function toggleTransactionStatus(txId) {
+            const index = transactions.findIndex(t => t.id === txId);
+            if (index === -1) return;
+
+            const tx = transactions[index];
+            const total = parseFloat(tx.amount) || 0;
+
+            if (tx.status === 'PAID' || (parseFloat(tx.paidAmount) >= total && total > 0)) {
+                transactions[index].status = 'PENDING';
+                transactions[index].paidAmount = 0;
+                showToast('Status alterado para Pendente.');
+            } else {
+                transactions[index].status = 'PAID';
+                transactions[index].paidAmount = total;
+                showToast('Venda quitada com sucesso!');
+            }
+
+            saveTransactions();
+            renderAll();
+        }
+
+        async function confirmDeleteTransaction(txId) {
+            const confirmed = await showConfirmModal('Excluir Venda', 'Deseja realmente apagar este registro de venda?');
+            if (confirmed) {
+                deleteTransaction(txId);
+            }
+        }
+
+        function deleteTransaction(txId) {
+            transactions = transactions.filter(t => t.id !== txId);
+            saveTransactions();
+            renderAll();
+            showToast('Venda excluída.');
+        }
 
         // --- DATA MANAGEMENT & PERSISTENCE ---
         function saveClients() {
@@ -547,9 +999,9 @@
                 // Mock transactions for testing categorization
                 const today = new Date();
 
-                const d1 = new Date(today); d1.setDate(today.getDate() - 5); // Overdue 5 days ago
-                const d2 = new Date(today); d2.setDate(today.getDate() + 2); // Due in 2 days
-                const d3 = new Date(today); d3.setDate(today.getDate() + 10); // Due in 10 days
+                const d1 = new Date(today); d1.setDate(today.getDate() - 5);
+                const d2 = new Date(today); d2.setDate(today.getDate() + 2);
+                const d3 = new Date(today); d3.setDate(today.getDate() + 10);
 
                 transactions = [
                     { 
@@ -600,6 +1052,160 @@
                 templates = { ...templates, ...JSON.parse(rawTemplates) };
             }
             populateTemplatesUI();
+
+            const storedClientId = localStorage.getItem('cadernito_gdrive_client_id');
+            if (storedClientId && document.getElementById('gdrive-client-id')) {
+                document.getElementById('gdrive-client-id').value = storedClientId;
+            }
+        }
+
+        // --- GOOGLE DRIVE & WEB SHARE INTEGRATION ---
+        async function shareToDrive() {
+            const data = {
+                clients,
+                transactions,
+                templates,
+                exportedAt: new Date().toISOString()
+            };
+            const jsonStr = JSON.stringify(data, null, 2);
+            const fileName = `cadernito_backup_${new Date().toISOString().split('T')[0]}.json`;
+            const file = new File([jsonStr], fileName, { type: 'application/json' });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Backup Cadernito Digital',
+                        text: 'Arquivo de backup do sistema Cadernito Digital'
+                    });
+                    showToast('Backup enviado com sucesso!');
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        showToast('Não foi possível compartilhar.', 'error');
+                    }
+                }
+            } else {
+                exportData();
+                showToast('Arquivo baixado! Salve-o no seu Google Drive.', 'warning');
+            }
+        }
+
+        let tokenClient = null;
+        let accessToken = null;
+
+        function saveGoogleClientId() {
+            const clientId = document.getElementById('gdrive-client-id').value.trim();
+            localStorage.setItem('cadernito_gdrive_client_id', clientId);
+            showToast('Client ID do Google salvo!');
+        }
+
+        function initGoogleDriveAuth(callback) {
+            const clientId = document.getElementById('gdrive-client-id').value.trim() || localStorage.getItem('cadernito_gdrive_client_id');
+            if (!clientId) {
+                showToast('Insira o seu Google Client ID nos Ajustes para conectar.', 'warning');
+                return;
+            }
+
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+                showToast('Biblioteca do Google ainda carregando, tente novamente.', 'warning');
+                return;
+            }
+
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: clientId,
+                scope: 'https://www.googleapis.com/auth/drive.file',
+                callback: async (response) => {
+                    if (response.error !== undefined) {
+                        showToast('Erro ao autenticar com o Google.', 'error');
+                        return;
+                    }
+                    accessToken = response.access_token;
+                    if (callback) callback();
+                },
+            });
+
+            tokenClient.requestAccessToken({ prompt: 'consent' });
+        }
+
+        function backupToGoogleDrive() {
+            initGoogleDriveAuth(async () => {
+                if (!accessToken) return;
+                try {
+                    showToast('Enviando backup para o Google Drive...');
+                    const data = {
+                        clients,
+                        transactions,
+                        templates,
+                        exportedAt: new Date().toISOString()
+                    };
+                    const fileContent = JSON.stringify(data, null, 2);
+                    const metadata = {
+                        name: 'cadernito_backup.json',
+                        mimeType: 'application/json'
+                    };
+
+                    const form = new FormData();
+                    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                    form.append('file', new Blob([fileContent], { type: 'application/json' }));
+
+                    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${accessToken}` },
+                        body: form
+                    });
+
+                    if (res.ok) {
+                        showToast('Backup salvo no Google Drive!', 'success');
+                    } else {
+                        showToast('Falha ao enviar arquivo para o Drive.', 'error');
+                    }
+                } catch (e) {
+                    showToast('Erro de conexão com o Google Drive.', 'error');
+                }
+            });
+        }
+
+        function restoreFromGoogleDrive() {
+            initGoogleDriveAuth(async () => {
+                if (!accessToken) return;
+                try {
+                    showToast('Buscando backups no Google Drive...');
+                    const query = encodeURIComponent("name = 'cadernito_backup.json' and trashed = false");
+                    const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=createdTime desc`, {
+                        headers: { Authorization: `Bearer ${accessToken}` }
+                    });
+                    const listData = await listRes.json();
+
+                    if (!listData.files || listData.files.length === 0) {
+                        showToast('Nenhum "cadernito_backup.json" encontrado no Drive.', 'warning');
+                        return;
+                    }
+
+                    const fileId = listData.files[0].id;
+                    const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+                        headers: { Authorization: `Bearer ${accessToken}` }
+                    });
+                    const backupData = await fileRes.json();
+
+                    if (backupData.clients && backupData.transactions) {
+                        clients = backupData.clients;
+                        transactions = backupData.transactions;
+                        if (backupData.templates) templates = { ...templates, ...backupData.templates };
+
+                        saveClients();
+                        saveTransactions();
+                        saveTemplatesToStorage();
+                        populateTemplatesUI();
+                        renderAll();
+
+                        showToast('Dados restaurados com sucesso do Google Drive!');
+                    } else {
+                        showToast('Arquivo de backup inválido no Drive.', 'error');
+                    }
+                } catch (e) {
+                    showToast('Erro ao carregar backup do Google Drive.', 'error');
+                }
+            });
         }
 
         // --- HELPER FOR MULTI-ITEM TRANSACTIONS ---
@@ -685,15 +1291,25 @@
 
         // --- STATUS & DATE COMPUTATION LOGIC ---
         function getTransactionStatusDetails(tx) {
-            if (tx.status === 'PAID') {
+            const total = parseFloat(tx.amount) || 0;
+            const paidAmount = Math.min(total, parseFloat(tx.paidAmount) || 0);
+            const remaining = Math.max(0, total - paidAmount);
+
+            if (tx.status === 'PAID' || remaining === 0) {
                 return {
                     code: 'PAID',
                     label: 'Pago',
                     badgeClass: 'bg-blue-100 text-blue-800 border-blue-200',
                     dotClass: 'bg-blue-500',
-                    daysText: 'Liquidado'
+                    daysText: 'Liquidado',
+                    total: total,
+                    paidAmount: total,
+                    remaining: 0,
+                    isPartial: false
                 };
             }
+
+            const isPartial = paidAmount > 0 && remaining > 0;
 
             // Calculate diff days
             const today = new Date();
@@ -706,31 +1322,41 @@
             const diffTime = dueDateObj - today;
             const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
+            let statusBase = {
+                total: total,
+                paidAmount: paidAmount,
+                remaining: remaining,
+                isPartial: isPartial
+            };
+
             if (diffDays < 0) {
                 const daysAbs = Math.abs(diffDays);
                 return {
+                    ...statusBase,
                     code: 'OVERDUE',
-                    label: 'Em Atraso',
-                    badgeClass: 'bg-red-100 text-red-800 border-red-200',
-                    dotClass: 'bg-red-500',
+                    label: isPartial ? 'Parcial (Atrasado)' : 'Em Atraso',
+                    badgeClass: isPartial ? 'bg-purple-100 text-purple-800 border-purple-200' : 'bg-red-100 text-red-800 border-red-200',
+                    dotClass: isPartial ? 'bg-purple-500' : 'bg-red-500',
                     diffDays: diffDays,
                     daysText: `Atrasado há ${daysAbs} dia(s)`
                 };
             } else if (diffDays <= 3) {
                 return {
+                    ...statusBase,
                     code: 'DUE_SOON',
-                    label: 'Vencendo',
-                    badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
-                    dotClass: 'bg-amber-500',
+                    label: isPartial ? 'Parcial (Vencendo)' : 'Vencendo',
+                    badgeClass: isPartial ? 'bg-purple-100 text-purple-800 border-purple-200' : 'bg-amber-100 text-amber-800 border-amber-200',
+                    dotClass: isPartial ? 'bg-purple-500' : 'bg-amber-500',
                     diffDays: diffDays,
                     daysText: diffDays === 0 ? 'Vence HOJE' : `Vence em ${diffDays} dia(s)`
                 };
             } else {
                 return {
+                    ...statusBase,
                     code: 'ON_TIME',
-                    label: 'Em Dia',
-                    badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-                    dotClass: 'bg-emerald-500',
+                    label: isPartial ? 'Parcial (Em Dia)' : 'Em Dia',
+                    badgeClass: isPartial ? 'bg-purple-100 text-purple-800 border-purple-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                    dotClass: isPartial ? 'bg-purple-500' : 'bg-emerald-500',
                     diffDays: diffDays,
                     daysText: `Vence em ${diffDays} dias`
                 };
@@ -738,14 +1364,6 @@
         }
 
         // --- RENDERING VIEWS ---
-        function renderAll() {
-            renderMetrics();
-            renderClientSelectDropdowns();
-            renderTransactions();
-            renderClients();
-            renderClientHistory();
-        }
-
         function renderMetrics() {
             let totalPending = 0;
             let countPending = 0;
@@ -760,21 +1378,21 @@
             let countPaid = 0;
 
             transactions.forEach(tx => {
-                const amount = parseFloat(tx.amount) || 0;
                 const statusDetails = getTransactionStatusDetails(tx);
 
-                if (tx.status === 'PAID') {
-                    totalPaid += amount;
+                totalPaid += statusDetails.paidAmount;
+
+                if (statusDetails.code === 'PAID') {
                     countPaid++;
                 } else {
-                    totalPending += amount;
+                    totalPending += statusDetails.remaining;
                     countPending++;
 
                     if (statusDetails.code === 'OVERDUE') {
-                        totalOverdue += amount;
+                        totalOverdue += statusDetails.remaining;
                         countOverdue++;
                     } else if (statusDetails.code === 'DUE_SOON') {
-                        totalDueSoon += amount;
+                        totalDueSoon += statusDetails.remaining;
                         countDueSoon++;
                     }
                 }
@@ -816,7 +1434,6 @@
                 return matchesSearch && matchesClientFilter && matchesStatus;
             });
 
-            // Sort by due date (oldest due date first for pending, paid at bottom)
             filtered.sort((a, b) => {
                 if (a.status === 'PAID' && b.status !== 'PAID') return 1;
                 if (a.status !== 'PAID' && b.status === 'PAID') return -1;
@@ -838,7 +1455,7 @@
             container.innerHTML = filtered.map(tx => {
                 const client = clients.find(c => c.id === tx.clientId) || { name: 'Cliente Removido', phone: '' };
                 const statusDetails = getTransactionStatusDetails(tx);
-                const isPaid = tx.status === 'PAID';
+                const isPaid = tx.status === 'PAID' || statusDetails.remaining === 0;
                 const items = getTxItems(tx);
 
                 return `
@@ -856,11 +1473,19 @@
                             </div>
                             <div class="text-right shrink-0">
                                 <div class="text-base font-extrabold ${isPaid ? 'text-slate-400 line-through' : 'text-slate-800'}">
-                                    ${formatCurrency(tx.amount)}
+                                    ${formatCurrency(statusDetails.total)}
                                 </div>
-                                <span class="text-[11px] text-slate-400">${statusDetails.daysText}</span>
+                                <span class="text-[11px] text-slate-400 block">${statusDetails.daysText}</span>
                             </div>
                         </div>
+
+                        <!-- Partial Payment Progress / Summary -->
+                        ${statusDetails.isPartial ? `
+                            <div class="bg-purple-50/80 border border-purple-100 rounded-xl p-2.5 text-xs flex items-center justify-between">
+                                <span class="text-purple-800 font-medium">Já Pago: <strong>${formatCurrency(statusDetails.paidAmount)}</strong></span>
+                                <span class="text-purple-900 font-bold">Falta Pagar: <strong class="text-purple-700 font-extrabold">${formatCurrency(statusDetails.remaining)}</strong></span>
+                            </div>
+                        ` : ''}
 
                         <!-- Item Breakdown List -->
                         <div class="bg-slate-50/80 rounded-xl p-2.5 border border-slate-100 text-xs space-y-1">
@@ -885,12 +1510,17 @@
                         </div>
 
                         <!-- Action Bar -->
-                        <div class="flex items-center justify-between pt-1 gap-2">
-                            <div class="flex items-center gap-1">
+                        <div class="flex flex-wrap items-center justify-between pt-1 gap-2">
+                            <div class="flex items-center gap-1.5">
                                 <button onclick="toggleTransactionStatus('${tx.id}')" title="Alternar Pago / Pendente" class="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 ${isPaid ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'} transition">
                                     <i data-lucide="${isPaid ? 'rotate-ccw' : 'check'}" class="w-3.5 h-3.5"></i>
-                                    ${isPaid ? 'Marcar Pendente' : 'Marcar como Pago'}
+                                    ${isPaid ? 'Marcar Pendente' : 'Quitar Tudo'}
                                 </button>
+                                ${!isPaid ? `
+                                    <button onclick="openPartialPaymentModal('${tx.id}')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-semibold flex items-center gap-1 transition">
+                                        <i data-lucide="coins" class="w-3.5 h-3.5"></i> Abater R$
+                                    </button>
+                                ` : ''}
                             </div>
 
                             <div class="flex items-center gap-1">
@@ -915,263 +1545,66 @@
             lucide.createIcons();
         }
 
-        function renderClients() {
-            const container = document.getElementById('clients-container');
-            const searchVal = document.getElementById('search-client-input').value.toLowerCase().trim();
+        // --- PARTIAL PAYMENT MODAL HANDLERS ---
+        function togglePaidAmountInput() {
+            const status = document.getElementById('tx-status').value;
+            const paidInput = document.getElementById('tx-paid-amount');
+            const totalVal = parseFloat(document.getElementById('tx-amount').value) || 0;
 
-            const filtered = clients.filter(c => 
-                c.name.toLowerCase().includes(searchVal) || 
-                c.phone.includes(searchVal)
-            );
-
-            if (filtered.length === 0) {
-                container.innerHTML = `
-                    <div class="col-span-full bg-white rounded-2xl p-8 text-center border border-slate-100">
-                        <p class="text-sm font-semibold text-slate-600">Nenhum cliente encontrado</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = filtered.map(c => {
-                // Calculate debt summary for this client
-                const clientTxs = transactions.filter(t => t.clientId === c.id);
-                const pendingTxs = clientTxs.filter(t => t.status === 'PENDING');
-                const totalDebt = pendingTxs.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-                const overdueCount = pendingTxs.filter(t => getTransactionStatusDetails(t).code === 'OVERDUE').length;
-
-                return `
-                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col justify-between space-y-3">
-                        <div class="flex items-start justify-between">
-                            <div>
-                                <h4 class="font-bold text-slate-800 text-sm">${escapeHtml(c.name)}</h4>
-                                <p class="text-xs font-mono text-emerald-700 flex items-center gap-1 mt-0.5">
-                                    <i data-lucide="phone" class="w-3 h-3"></i> ${formatPhoneNumber(c.phone)}
-                                </p>
-                                ${c.notes ? `<p class="text-xs text-slate-400 mt-1">${escapeHtml(c.notes)}</p>` : ''}
-                            </div>
-                            <div class="text-right">
-                                <span class="text-xs text-slate-400 block">Dívida Ativa</span>
-                                <span class="text-sm font-extrabold ${totalDebt > 0 ? 'text-slate-800' : 'text-emerald-600'}">
-                                    ${formatCurrency(totalDebt)}
-                                </span>
-                                ${overdueCount > 0 ? `<span class="block text-[10px] text-red-600 font-semibold">${overdueCount} em atraso</span>` : ''}
-                            </div>
-                        </div>
-
-                        <div class="flex items-center justify-between pt-2 border-t border-slate-50">
-                            <button onclick="openTransactionModalForClient('${c.id}')" class="text-xs text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-1">
-                                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Nova Venda
-                            </button>
-                            <div class="flex items-center gap-1">
-                                <button onclick="openClientModal('${c.id}')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">
-                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
-                                </button>
-                                <button onclick="confirmDeleteClient('${c.id}')" class="p-1.5 text-slate-400 hover:text-red-600 rounded-lg">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            lucide.createIcons();
-        }
-
-        function renderClientSelectDropdowns() {
-            const selectTx = document.getElementById('tx-client-id');
-            const selectFilter = document.getElementById('filter-client');
-
-            const currentTxVal = selectTx.value;
-            const currentFilterVal = selectFilter.value;
-
-            let txOptions = '<option value="">Selecione um cliente...</option>';
-            let filterOptions = '<option value="ALL">Todos os Clientes</option>';
-
-            clients.sort((a,b) => a.name.localeCompare(b.name)).forEach(c => {
-                txOptions += `<option value="${c.id}">${escapeHtml(c.name)} (${formatPhoneNumber(c.phone)})</option>`;
-                filterOptions += `<option value="${c.id}">${escapeHtml(c.name)}</option>`;
-            });
-
-            selectTx.innerHTML = txOptions;
-            selectFilter.innerHTML = filterOptions;
-
-            selectTx.value = currentTxVal;
-            selectFilter.value = currentFilterVal;
-        }
-
-        // --- FILTER TAB CONTROLS ---
-        function setFilterStatus(status) {
-            currentFilterStatus = status;
-            document.querySelectorAll('.filter-status-btn').forEach(btn => {
-                btn.className = 'filter-status-btn px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0 transition flex items-center gap-1.5';
-            });
-
-            const activeBtn = document.getElementById(`filter-status-${status}`);
-            if (activeBtn) {
-                activeBtn.className = 'filter-status-btn px-3 py-1.5 rounded-xl bg-slate-800 text-white shrink-0 transition flex items-center gap-1.5 shadow-sm';
-            }
-            renderTransactions();
-        }
-
-        function switchTab(tabName) {
-            document.getElementById('view-transactions').classList.add('hidden');
-            document.getElementById('view-clients').classList.add('hidden');
-            document.getElementById('view-history').classList.add('hidden');
-            document.getElementById('view-settings').classList.add('hidden');
-
-            const inactiveClass = "py-2.5 px-4 font-semibold text-sm text-slate-500 hover:text-slate-700 border-b-2 border-transparent flex items-center gap-2 shrink-0";
-            const activeClass = "py-2.5 px-4 font-semibold text-sm border-b-2 border-emerald-600 text-emerald-600 flex items-center gap-2 shrink-0";
-
-            document.getElementById('tab-btn-transactions').className = inactiveClass;
-            document.getElementById('tab-btn-clients').className = inactiveClass;
-            document.getElementById('tab-btn-history').className = inactiveClass;
-            document.getElementById('tab-btn-settings').className = inactiveClass;
-
-            if (tabName === 'transactions') {
-                document.getElementById('view-transactions').classList.remove('hidden');
-                document.getElementById('tab-btn-transactions').className = activeClass;
-            } else if (tabName === 'clients') {
-                document.getElementById('view-clients').classList.remove('hidden');
-                document.getElementById('tab-btn-clients').className = activeClass;
-            } else if (tabName === 'history') {
-                document.getElementById('view-history').classList.remove('hidden');
-                document.getElementById('tab-btn-history').className = activeClass;
-                renderClientHistory();
-            } else if (tabName === 'settings') {
-                document.getElementById('view-settings').classList.remove('hidden');
-                document.getElementById('tab-btn-settings').className = activeClass;
+            if (status === 'PAID') {
+                paidInput.value = totalVal.toFixed(2);
+            } else if (status === 'PENDING') {
+                paidInput.value = '0.00';
             }
         }
 
-        function renderClientHistory() {
-            const container = document.getElementById('history-container');
-            if (!container) return;
+        function openPartialPaymentModal(txId) {
+            const tx = transactions.find(t => t.id === txId);
+            if (!tx) return;
 
-            const searchVal = (document.getElementById('search-history-input')?.value || '').toLowerCase().trim();
+            const client = clients.find(c => c.id === tx.clientId);
+            const statusDetails = getTransactionStatusDetails(tx);
 
-            const filteredClients = clients.filter(c => 
-                c.name.toLowerCase().includes(searchVal) || 
-                c.phone.includes(searchVal)
-            );
+            document.getElementById('partial-tx-id').value = tx.id;
+            document.getElementById('partial-info-client').innerText = client ? client.name : 'Cliente';
+            document.getElementById('partial-info-total').innerText = formatCurrency(statusDetails.total);
+            document.getElementById('partial-info-paid').innerText = formatCurrency(statusDetails.paidAmount);
+            document.getElementById('partial-info-remaining').innerText = formatCurrency(statusDetails.remaining);
+            document.getElementById('partial-input-amount').value = '';
 
-            if (filteredClients.length === 0) {
-                container.innerHTML = `
-                    <div class="bg-white rounded-2xl p-8 text-center border border-slate-100">
-                        <i data-lucide="history" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
-                        <p class="text-sm font-semibold text-slate-600">Nenhum histórico encontrado</p>
-                    </div>
-                `;
-                lucide.createIcons();
-                return;
+            document.getElementById('modal-partial').classList.remove('hidden');
+        }
+
+        function closePartialPaymentModal() {
+            document.getElementById('modal-partial').classList.add('hidden');
+        }
+
+        function handlePartialPaymentSubmit(e) {
+            e.preventDefault();
+            const txId = document.getElementById('partial-tx-id').value;
+            const addAmount = parseFloat(document.getElementById('partial-input-amount').value) || 0;
+
+            const txIndex = transactions.findIndex(t => t.id === txId);
+            if (txIndex === -1 || addAmount <= 0) return;
+
+            const tx = transactions[txIndex];
+            const currentPaid = parseFloat(tx.paidAmount) || 0;
+            const total = parseFloat(tx.amount) || 0;
+            const newPaid = currentPaid + addAmount;
+
+            if (newPaid >= total) {
+                transactions[txIndex].paidAmount = total;
+                transactions[txIndex].status = 'PAID';
+                showToast('Pagamento totalmente quitado!', 'success');
+            } else {
+                transactions[txIndex].paidAmount = newPaid;
+                transactions[txIndex].status = 'PARTIAL';
+                showToast(`Abatimento de ${formatCurrency(addAmount)} registrado com sucesso!`, 'success');
             }
 
-            container.innerHTML = filteredClients.map(client => {
-                const clientTxs = transactions.filter(t => t.clientId === client.id);
-                clientTxs.sort((a, b) => new Date(b.purchaseDate) - new Date(a.purchaseDate));
-
-                const totalPurchasesCount = clientTxs.length;
-                const totalAmount = clientTxs.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
-                const pendingTxs = clientTxs.filter(t => t.status === 'PENDING');
-                const totalPendingAmount = pendingTxs.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
-                const paidTxs = clientTxs.filter(t => t.status === 'PAID');
-                const totalPaidAmount = paidTxs.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
-
-                return `
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                        <!-- Client Header Summary -->
-                        <div class="bg-slate-50 p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <h3 class="font-bold text-slate-800 text-base">${escapeHtml(client.name)}</h3>
-                                    <span class="text-xs bg-slate-200 text-slate-700 font-semibold px-2 py-0.5 rounded-full">
-                                        ${totalPurchasesCount} compra(s)
-                                    </span>
-                                </div>
-                                <p class="text-xs font-mono text-emerald-700 flex items-center gap-1 mt-0.5">
-                                    <i data-lucide="phone" class="w-3 h-3"></i> ${formatPhoneNumber(client.phone)}
-                                </p>
-                            </div>
-
-                            <div class="flex flex-wrap gap-2 text-xs">
-                                <div class="bg-white px-3 py-1.5 rounded-xl border border-slate-200">
-                                    <span class="text-slate-400 block text-[10px]">Total Comprado</span>
-                                    <span class="font-bold text-slate-800">${formatCurrency(totalAmount)}</span>
-                                </div>
-                                <div class="bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100">
-                                    <span class="text-blue-500 block text-[10px]">Total Pago</span>
-                                    <span class="font-bold text-blue-700">${formatCurrency(totalPaidAmount)}</span>
-                                </div>
-                                <div class="bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">
-                                    <span class="text-emerald-600 block text-[10px]">Pendente</span>
-                                    <span class="font-bold ${totalPendingAmount > 0 ? 'text-amber-600' : 'text-emerald-700'}">${formatCurrency(totalPendingAmount)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Client Transactions List -->
-                        <div class="p-4 space-y-3">
-                            ${clientTxs.length === 0 ? `
-                                <p class="text-xs text-slate-400 text-center py-2">Nenhuma compra registrada para este cliente.</p>
-                            ` : clientTxs.map(tx => {
-                                const statusDetails = getTransactionStatusDetails(tx);
-                                const isPaid = tx.status === 'PAID';
-                                const items = getTxItems(tx);
-
-                                return `
-                                    <div class="border border-slate-100 rounded-xl p-3 bg-slate-50/50 hover:bg-slate-50 transition space-y-2">
-                                        <div class="flex flex-wrap items-center justify-between gap-2">
-                                            <div class="flex items-center gap-2">
-                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border flex items-center gap-1 ${statusDetails.badgeClass}">
-                                                    <span class="w-1.5 h-1.5 rounded-full ${statusDetails.dotClass}"></span>
-                                                    ${statusDetails.label}
-                                                </span>
-                                                <span class="text-xs text-slate-500">
-                                                    Compra em: <strong>${formatDate(tx.purchaseDate)}</strong> | Vencimento: <strong>${formatDate(tx.dueDate)}</strong>
-                                                </span>
-                                            </div>
-                                            <div class="font-bold text-sm text-slate-800">
-                                                ${formatCurrency(tx.amount)}
-                                            </div>
-                                        </div>
-
-                                        <!-- Item breakdown -->
-                                        <div class="text-xs text-slate-600 bg-white p-2 rounded-lg border border-slate-100">
-                                            <div class="font-semibold text-slate-700 mb-1 text-[11px]">Itens comprados:</div>
-                                            <ul class="space-y-0.5">
-                                                ${items.map(it => `
-                                                    <li class="flex justify-between text-[11px]">
-                                                        <span><strong class="text-slate-800">${it.qty}x</strong> ${escapeHtml(it.description)}</span>
-                                                        <span class="font-mono text-slate-500">${formatCurrency(it.subtotal)}</span>
-                                                    </li>
-                                                `).join('')}
-                                            </ul>
-                                        </div>
-
-                                        <div class="flex items-center justify-between text-xs pt-1">
-                                            <span class="text-[11px] text-slate-400 font-medium">${statusDetails.daysText}</span>
-                                            <div class="flex items-center gap-1">
-                                                <button onclick="toggleTransactionStatus('${tx.id}')" title="Alternar Pago / Pendente" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1 ${isPaid ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'} transition">
-                                                    <i data-lucide="${isPaid ? 'rotate-ccw' : 'check'}" class="w-3 h-3"></i>
-                                                    ${isPaid ? 'Tornar Pendente' : 'Marcar Pago'}
-                                                </button>
-                                                ${!isPaid ? `
-                                                    <button onclick="openWhatsAppModal('${tx.id}')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-semibold flex items-center gap-1 transition">
-                                                        <i data-lucide="message-circle" class="w-3 h-3"></i> WhatsApp
-                                                    </button>
-                                                ` : ''}
-                                            </div>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            lucide.createIcons();
+            saveTransactions();
+            closePartialPaymentModal();
+            renderAll();
         }
 
         // --- TRANSACTION HANDLERS ---
@@ -1196,7 +1629,8 @@
                     document.getElementById('tx-client-id').value = tx.clientId;
                     document.getElementById('tx-purchase-date').value = tx.purchaseDate;
                     document.getElementById('tx-due-date').value = tx.dueDate;
-                    document.getElementById('tx-status').value = tx.status;
+                    document.getElementById('tx-status').value = tx.status || 'PENDING';
+                    document.getElementById('tx-paid-amount').value = parseFloat(tx.paidAmount || 0).toFixed(2);
                     document.getElementById('tx-notes').value = tx.notes || '';
                     
                     const items = getTxItems(tx);
@@ -1209,8 +1643,8 @@
                 document.getElementById('tx-purchase-date').value = todayStr;
                 document.getElementById('tx-due-date').value = todayStr;
                 document.getElementById('tx-status').value = 'PENDING';
+                document.getElementById('tx-paid-amount').value = '0.00';
                 
-                // Add initial empty item row
                 addTxItemRow();
                 title.innerHTML = `<i data-lucide="shopping-bag" class="w-5 h-5 text-emerald-600"></i> Nova Venda / Dívida`;
             }
@@ -1220,25 +1654,16 @@
             document.getElementById('modal-transaction').classList.remove('hidden');
         }
 
-        function openTransactionModalForClient(clientId) {
-            openTransactionModal();
-            document.getElementById('tx-client-id').value = clientId;
-        }
-
-        function closeTransactionModal() {
-            document.getElementById('modal-transaction').classList.add('hidden');
-        }
-
         function handleTransactionSubmit(e) {
             e.preventDefault();
             const id = document.getElementById('tx-id').value;
             const clientId = document.getElementById('tx-client-id').value;
             const purchaseDate = document.getElementById('tx-purchase-date').value;
             const dueDate = document.getElementById('tx-due-date').value;
-            const status = document.getElementById('tx-status').value;
+            let status = document.getElementById('tx-status').value;
+            const paidAmountInput = parseFloat(document.getElementById('tx-paid-amount').value) || 0;
             const notes = document.getElementById('tx-notes').value.trim();
 
-            // Collect items
             const rowElements = document.querySelectorAll('.tx-item-row');
             const items = [];
             let totalAmount = 0;
@@ -1260,11 +1685,16 @@
                 return;
             }
 
-            // Build item summary text
+            let finalPaidAmount = Math.min(totalAmount, Math.max(0, paidAmountInput));
+            if (finalPaidAmount >= totalAmount) {
+                status = 'PAID';
+            } else if (finalPaidAmount > 0) {
+                status = 'PARTIAL';
+            }
+
             const descriptionSummary = items.map(i => `${i.description} (${i.qty}x)`).join(', ');
 
             if (id) {
-                // Update
                 const index = transactions.findIndex(t => t.id === id);
                 if (index !== -1) {
                     transactions[index] = { 
@@ -1272,6 +1702,7 @@
                         clientId, 
                         description: descriptionSummary, 
                         amount: totalAmount, 
+                        paidAmount: finalPaidAmount,
                         items, 
                         purchaseDate, 
                         dueDate, 
@@ -1281,12 +1712,12 @@
                     showToast('Movimentação atualizada com sucesso!');
                 }
             } else {
-                // Create
                 const newTx = {
                     id: 't_' + Date.now(),
                     clientId,
                     description: descriptionSummary,
                     amount: totalAmount,
+                    paidAmount: finalPaidAmount,
                     items,
                     purchaseDate,
                     dueDate,
@@ -1300,109 +1731,6 @@
             saveTransactions();
             closeTransactionModal();
             renderAll();
-        }
-
-        function toggleTransactionStatus(id) {
-            const index = transactions.findIndex(t => t.id === id);
-            if (index !== -1) {
-                const currentStatus = transactions[index].status;
-                const newStatus = currentStatus === 'PAID' ? 'PENDING' : 'PAID';
-                transactions[index].status = newStatus;
-                saveTransactions();
-                renderAll();
-
-                showToast(newStatus === 'PAID' ? 'Status alterado para PAGO!' : 'Status retornado para PENDENTE.');
-            }
-        }
-
-        async function confirmDeleteTransaction(id) {
-            const confirmed = await showConfirmModal('Excluir Lançamento', 'Deseja realmente apagar este registro de venda?');
-            if (confirmed) {
-                transactions = transactions.filter(t => t.id !== id);
-                saveTransactions();
-                renderAll();
-                showToast('Lançamento excluído com sucesso.');
-            }
-        }
-
-        // --- CLIENT HANDLERS ---
-        function openClientModal(editId = null) {
-            const form = document.getElementById('form-client');
-            form.reset();
-            const title = document.getElementById('modal-client-title');
-
-            if (editId) {
-                const client = clients.find(c => c.id === editId);
-                if (client) {
-                    document.getElementById('client-id').value = client.id;
-                    document.getElementById('client-name').value = client.name;
-                    document.getElementById('client-phone').value = client.phone;
-                    document.getElementById('client-notes').value = client.notes || '';
-                    title.innerHTML = `<i data-lucide="edit" class="w-5 h-5 text-emerald-600"></i> Editar Cliente`;
-                }
-            } else {
-                document.getElementById('client-id').value = '';
-                title.innerHTML = `<i data-lucide="user-plus" class="w-5 h-5 text-emerald-600"></i> Cadastrar Cliente`;
-            }
-
-            lucide.createIcons();
-            document.getElementById('modal-client').classList.remove('hidden');
-        }
-
-        function closeClientModal() {
-            document.getElementById('modal-client').classList.add('hidden');
-        }
-
-        function handleClientSubmit(e) {
-            e.preventDefault();
-            const id = document.getElementById('client-id').value;
-            const name = document.getElementById('client-name').value.trim();
-            const rawPhone = document.getElementById('client-phone').value.trim();
-            const notes = document.getElementById('client-notes').value.trim();
-
-            const cleanPhone = sanitizePhone(rawPhone);
-
-            if (!name || cleanPhone.length < 10) {
-                showToast('Informe um nome válido e telefone com DDD (mínimo 10 dígitos).', 'error');
-                return;
-            }
-
-            if (id) {
-                const idx = clients.findIndex(c => c.id === id);
-                if (idx !== -1) {
-                    clients[idx] = { ...clients[idx], name, phone: cleanPhone, notes };
-                    showToast('Dados do cliente atualizados!');
-                }
-            } else {
-                const newClient = {
-                    id: 'c_' + Date.now(),
-                    name,
-                    phone: cleanPhone,
-                    notes
-                };
-                clients.push(newClient);
-                showToast('Cliente cadastrado com sucesso!');
-            }
-
-            saveClients();
-            closeClientModal();
-            renderAll();
-        }
-
-        async function confirmDeleteClient(id) {
-            const clientTxs = transactions.filter(t => t.clientId === id);
-            if (clientTxs.length > 0) {
-                showToast(`Não é possível excluir cliente que possui ${clientTxs.length} lançamento(s) associado(s).`, 'warning');
-                return;
-            }
-
-            const confirmed = await showConfirmModal('Excluir Cliente', 'Deseja apagar este cliente do seu cadastro?');
-            if (confirmed) {
-                clients = clients.filter(c => c.id !== id);
-                saveClients();
-                renderAll();
-                showToast('Cliente removido.');
-            }
         }
 
         // --- WHATSAPP REMINDER DISPATCH LOGIC ---
@@ -1419,7 +1747,6 @@
             const statusDetails = getTransactionStatusDetails(tx);
             const items = getTxItems(tx);
 
-            // Format items list for WhatsApp
             let itemsFormatted = '';
             if (items.length === 1) {
                 itemsFormatted = `${items[0].description} (${items[0].qty}x)`;
@@ -1427,7 +1754,6 @@
                 itemsFormatted = '\n' + items.map(item => `  • ${item.qty}x ${item.description} - ${formatCurrency(item.subtotal)}`).join('\n');
             }
             
-            // Choose appropriate template
             let templateStr = templates.onTime;
             if (statusDetails.code === 'OVERDUE') {
                 templateStr = templates.overdue;
@@ -1435,22 +1761,25 @@
                 templateStr = templates.dueSoon;
             }
 
-            // Fill placeholders
+            let detalhePagamento = '';
+            if (statusDetails.isPartial) {
+                detalhePagamento = `Já recebemos o pagamento parcial de ${formatCurrency(statusDetails.paidAmount)}. Resta o saldo de ${formatCurrency(statusDetails.remaining)}. `;
+            }
+
             const daysAbs = Math.abs(statusDetails.diffDays || 0);
             const formattedMsg = templateStr
                 .replace(/{cliente}/g, client.name)
                 .replace(/{descricao}/g, itemsFormatted)
                 .replace(/{valor}/g, formatCurrency(tx.amount))
+                .replace(/{detalhe_pagamento}/g, detalhePagamento)
                 .replace(/{vencimento}/g, formatDate(tx.dueDate))
                 .replace(/{dias}/g, daysAbs === 0 ? 'hoje' : `${daysAbs} dias`);
 
-            // Store active dispatch context
             activeWhatsAppPayload = {
                 phone: client.phone,
                 message: formattedMsg
             };
 
-            // Set UI elements
             document.getElementById('wa-modal-client-name').innerText = client.name;
             document.getElementById('wa-modal-client-phone').innerText = formatPhoneNumber(client.phone);
             document.getElementById('wa-modal-message').value = formattedMsg;
@@ -1511,7 +1840,7 @@
 
             const a = document.createElement('a');
             a.href = url;
-            a.download = `cadernito_backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `caderninho_backup_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
             showToast('Backup gerado e baixado com sucesso!');
@@ -1655,5 +1984,7 @@
             }, 3000);
         }
     </script>
+
+ 
 </body>
 </html>
