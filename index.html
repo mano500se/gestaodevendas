@@ -66,6 +66,32 @@
     <!-- MAIN CONTAINER -->
     <main class="max-w-6xl mx-auto px-4 py-6 space-y-6">
 
+        <!-- BACKUP REMINDER BANNER (> 7 DAYS) -->
+        <div id="backup-reminder-banner" class="hidden bg-amber-50 border border-amber-300 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div class="flex items-start gap-3">
+                <div class="p-2 bg-amber-100 text-amber-700 rounded-xl shrink-0 mt-0.5 sm:mt-0">
+                    <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-amber-900">Lembrete de Cópia de Segurança (Backup)</h3>
+                    <p id="backup-reminder-text" class="text-xs text-amber-800 mt-0.5">
+                        Você está há mais de 7 dias sem exportar ou sincronizar seus dados locais. Faça um backup para evitar perdas.
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
+                <button onclick="exportData()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition shadow-sm">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i> Baixar Backup
+                </button>
+                <button onclick="switchTab('settings')" class="bg-white hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-semibold px-3 py-2 rounded-xl transition">
+                    Sincronizar
+                </button>
+                <button onclick="dismissBackupBanner()" class="p-1.5 text-amber-600 hover:text-amber-900 hover:bg-amber-100 rounded-lg transition" title="Lembrar depois">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
         <!-- FINANCIAL SUMMARY METRICS -->
         <section class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             <!-- Total a Receber -->
@@ -259,12 +285,17 @@
 
             <!-- Backup & Data Management -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
-                <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                    <i data-lucide="database" class="w-5 h-5 text-emerald-600"></i>
-                    Dados & Cópia de Segurança (Backup)
-                </h2>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="database" class="w-5 h-5 text-emerald-600"></i>
+                        Dados & Cópia de Segurança (Backup)
+                    </h2>
+                    <span id="last-backup-status" class="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600">
+                        Último backup: Verificando...
+                    </span>
+                </div>
                 <p class="text-xs text-slate-500">
-                    Seus dados estão armazenados localmente neste dispositivo. Faça backup regularmente para evitar perdas.
+                    Seus dados estão armazenados localmente neste dispositivo. Faça backup regularmente (a cada 7 dias) para evitar perdas.
                 </p>
 
                 <!-- Android Web Share / Direct Export & Drive -->
@@ -571,6 +602,9 @@
         const STORAGE_KEY_CLIENTS = 'cadernito_clients_v1';
         const STORAGE_KEY_TRANSACTIONS = 'cadernito_transactions_v1';
         const STORAGE_KEY_TEMPLATES = 'cadernito_templates_v1';
+        const STORAGE_KEY_LAST_BACKUP = 'cadernito_last_backup_at';
+        const STORAGE_KEY_FIRST_SEEN = 'cadernito_first_seen_at';
+        const BACKUP_REMINDER_DAYS = 7;
 
         let clients = [];
         let transactions = [];
@@ -587,6 +621,7 @@
         // --- INITIALIZATION ---
         window.addEventListener('DOMContentLoaded', () => {
             loadLocalStorageData();
+            checkBackupReminder();
             lucide.createIcons();
             
             // Set default transaction dates in form
@@ -596,6 +631,87 @@
 
             renderAll();
         });
+
+        // --- BACKUP REMINDER LOGIC ---
+        function recordBackupTimestamp() {
+            const nowIso = new Date().toISOString();
+            localStorage.setItem(STORAGE_KEY_LAST_BACKUP, nowIso);
+            sessionStorage.removeItem('cadernito_backup_banner_dismissed');
+            checkBackupReminder();
+        }
+
+        function checkBackupReminder() {
+            const now = Date.now();
+            const sevenDaysMs = BACKUP_REMINDER_DAYS * 24 * 60 * 60 * 1000;
+            const lastBackupStr = localStorage.getItem(STORAGE_KEY_LAST_BACKUP);
+            let firstSeenStr = localStorage.getItem(STORAGE_KEY_FIRST_SEEN);
+
+            if (!firstSeenStr) {
+                firstSeenStr = new Date().toISOString();
+                localStorage.setItem(STORAGE_KEY_FIRST_SEEN, firstSeenStr);
+            }
+
+            const statusBadge = document.getElementById('last-backup-status');
+            const banner = document.getElementById('backup-reminder-banner');
+            const bannerText = document.getElementById('backup-reminder-text');
+            const dismissed = sessionStorage.getItem('cadernito_backup_banner_dismissed') === '1';
+
+            let needsReminder = false;
+            let daysWithoutBackup = 0;
+
+            if (lastBackupStr) {
+                const lastBackupTime = new Date(lastBackupStr).getTime();
+                const diffMs = now - lastBackupTime;
+                daysWithoutBackup = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+                if (statusBadge) {
+                    const formatted = new Date(lastBackupStr).toLocaleString('pt-BR', {
+                        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                    });
+                    statusBadge.innerText = `Último backup: ${formatted}`;
+                    statusBadge.className = diffMs > sevenDaysMs
+                        ? 'text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800'
+                        : 'text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700';
+                }
+
+                if (diffMs > sevenDaysMs) {
+                    needsReminder = true;
+                    if (bannerText) {
+                        bannerText.innerText = `Seu último backup ou sincronização foi há ${daysWithoutBackup} dia(s). Exporte seus dados ou salve no Google Drive para manter tudo seguro.`;
+                    }
+                }
+            } else {
+                const firstSeenTime = new Date(firstSeenStr).getTime();
+                const diffMs = now - firstSeenTime;
+                daysWithoutBackup = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+                if (statusBadge) {
+                    statusBadge.innerText = 'Último backup: Nunca realizado';
+                    statusBadge.className = 'text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800';
+                }
+
+                if (diffMs > sevenDaysMs) {
+                    needsReminder = true;
+                    if (bannerText) {
+                        bannerText.innerText = `Você está usando o aplicativo há ${daysWithoutBackup} dia(s) e ainda não realizou nenhum backup ou sincronização.`;
+                    }
+                }
+            }
+
+            if (banner) {
+                if (needsReminder && !dismissed) {
+                    banner.classList.remove('hidden');
+                } else {
+                    banner.classList.add('hidden');
+                }
+            }
+        }
+
+        function dismissBackupBanner() {
+            sessionStorage.setItem('cadernito_backup_banner_dismissed', '1');
+            const banner = document.getElementById('backup-reminder-banner');
+            if (banner) banner.classList.add('hidden');
+        }
 
         // --- GLOBAL RENDER FUNCTION ---
         function renderAll() {
@@ -1095,6 +1211,7 @@
                         title: 'Backup Cadernito Digital',
                         text: 'Arquivo de backup do sistema Cadernito Digital'
                     });
+                    recordBackupTimestamp();
                     showToast('Backup enviado com sucesso!');
                 } catch (err) {
                     if (err.name !== 'AbortError') {
@@ -1172,6 +1289,7 @@
                     });
 
                     if (res.ok) {
+                        recordBackupTimestamp();
                         showToast('Backup salvo no Google Drive!', 'success');
                     } else {
                         showToast('Falha ao enviar arquivo para o Drive.', 'error');
@@ -1212,6 +1330,7 @@
                         saveClients();
                         saveTransactions();
                         saveTemplatesToStorage();
+                        recordBackupTimestamp();
                         populateTemplatesUI();
                         renderAll();
 
@@ -1894,6 +2013,8 @@
             a.download = `cadernito_backup_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
+
+            recordBackupTimestamp();
             showToast('Backup gerado e baixado com sucesso!');
         }
 
@@ -1913,6 +2034,7 @@
                         saveClients();
                         saveTransactions();
                         saveTemplatesToStorage();
+                        recordBackupTimestamp();
                         populateTemplatesUI();
                         renderAll();
 
